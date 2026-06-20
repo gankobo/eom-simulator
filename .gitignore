@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.local
+*.local.md
+.DS_Store
+tasks/_*.npy
+__pycache__/
+
+# 文書系・実装過程のログ（仕様操作マニュアル README.md は残す）
+HANDOFF_eom_simulator.md
+tasks/
+*.bak

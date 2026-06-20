@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listing 則 と half-angle 則</title>
+    <link rel="stylesheet" href="./src/app/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="canvas-wrap"></div>
+      <aside id="panel">
+        <h1>Listing 則 と half-angle 則</h1>
+        <p class="sub">数式と3Dの動きを対応させて理解する（§6）</p>
+        <p><a href="./index.html">← 筋作用シミュレータへ</a></p>
+
+        <section>
+          <div class="slider">
+            <label>水平偏心 <span id="hval">25</span>°</label>
+            <input id="h" type="range" min="-45" max="45" value="25" step="1" />
+          </div>
+          <div class="slider">
+            <label>垂直偏心 <span id="vval">0</span>°</label>
+            <input id="v" type="range" min="-45" max="45" value="0" step="1" />
+          </div>
+          <div class="slider">
+            <label>固視運動の振れ幅 <span id="ampval">30</span>°</label>
+            <input id="amp" type="range" min="0" max="45" value="30" step="1" />
+          </div>
+          <div class="row">
+            <label><input type="checkbox" id="anim" checked /> 固視運動を再生</label>
+          </div>
+          <div class="row">
+            <label>運動方向</label>
+            <select id="dir">
+              <option value="v">垂直に動かす</option>
+              <option value="h">水平に動かす</option>
+            </select>
+          </div>
+        </section>
+
+        <section>
+          <h2>到達のしかた比べ</h2>
+          <p class="sub">上の「水平／垂直偏心」を目標にして、第一眼位から3通りの動かし方で到達させる。終わったら12時の指針がどこを向くかを見比べる。</p>
+          <div class="row btns">
+            <button id="play1">① 1回転で到達</button>
+            <button id="play2">② half-angle 2段階</button>
+            <button id="play3">③ 半角なし 素朴2段階</button>
+          </div>
+          <div class="row">
+            <button id="playPause">⏸ 一時停止</button>
+            <button id="playReset">第一眼位へ戻す</button>
+            <button id="frontView">患者正面で見る</button>
+          </div>
+          <div class="slider">
+            <label>再生位置（手で動かしてコマ送り）</label>
+            <input id="scrub" type="range" min="0" max="1000" value="0" step="1" />
+          </div>
+          <p id="cmpnarr" class="narr">ボタンを押すと、いまどの段で何が起きているかをここで実況します。</p>
+          <p id="cmpstat" class="note">①②は薄いゴースト（正解の向き）にピタリ重なり、③はズレて着地します。</p>
+
+          <h2>3パスの成績（着地の回旋を見比べ）</h2>
+          <table>
+            <thead>
+              <tr><th>パス</th><th>着地の回旋</th><th>正解とのズレ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>① 1回転</td><td id="r1tors" style="text-align:right">—</td><td id="r1gap" style="text-align:right">—</td></tr>
+              <tr><td>② half-angle</td><td id="r2tors" style="text-align:right">—</td><td id="r2gap" style="text-align:right">—</td></tr>
+              <tr><td>③ 半角なし</td><td id="r3tors" style="text-align:right">—</td><td id="r3gap" style="text-align:right">—</td></tr>
+            </tbody>
+          </table>
+          <p class="note">①②③を順に再生すると、ここに着地の回旋がたまります。①②はほぼ0、③だけ回旋が残るのが一覧で分かります。</p>
+        </section>
+
+        <section>
+          <h2>数値（数式との対応）</h2>
+          <table>
+            <tbody>
+              <tr><td>偏心角 E</td><td id="ecc" style="text-align:right">—</td></tr>
+              <tr><td>予測 E / 2</td><td id="half" style="text-align:right">—</td></tr>
+              <tr><td>角速度軸の傾き(実測)</td><td id="tilt" style="text-align:right">—</td></tr>
+              <tr><td>回旋(Listing残差)</td><td id="resid" style="text-align:right">—</td></tr>
+              <tr><td>12時の傾き(回旋角)</td><td id="tors" style="text-align:right">—</td></tr>
+              <tr><td>正解とのズレ</td><td id="cmp" style="text-align:right">—</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="legend">
+          <h2>凡例</h2>
+          <p><b style="color:#1fb6c4">水色の面</b>: Listing 面（YZ）。固視眼位の回転ベクトルはここに乗る。</p>
+          <p><b style="color:#35e07a">緑の矢印</b>: 位置の回転ベクトル（第一眼位→現在）。<u>面内</u>にある。</p>
+          <p><b style="color:#e8902f">橙の矢印</b>: 角速度軸（固視運動）。面から <b>E/2</b> 傾く＝half-angle。</p>
+          <p><b style="color:#ff4d6d">赤い指針</b>: 角膜前面の時計。12時の傾き＝眼の<b>回旋（ねじれ）</b>。数値欄に <b>外旋(excyclo)/内旋(incyclo)</b> を併記。</p>
+          <p><b style="color:#9fb0d0">薄い指針</b>: 正解（目標 Listing 姿勢）の12時。各パスがここに収束するか見る。</p>
+          <p><b style="color:#b066ff">紫の矢印</b>／<b style="color:#ffd23f">金の矢印</b>: 到達のしかた比べで進行中の段の<b>回転軸</b>（紫＝第1段、金＝第2段）。その段の動作中だけ表示。①は1本のみ。</p>
+          <p class="note">
+            half-angle 則: 固視を保つ運動の角速度軸は、眼位の偏心角の<b>半分</b>だけ
+            Listing 面から傾く。これにより運動が可換化し、偽の回旋が生じない。
+            「到達のしかた比べ」で、①1回転 と ②half-angle2段階 は同じ回旋に着地し（指針が重なる）、
+            ③半角なしの素朴2段階だけが12時のズレ＝<b>偽の回旋</b>を生むことが見える。
+          </p>
+        </section>
+      </aside>
+    </div>
+    <script type="module" src="./src/app/listing.ts"></script>
+  </body>
+</html>
