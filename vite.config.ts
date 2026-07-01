@@ -9,6 +9,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         listing: resolve(__dirname, "listing.html"),
+        guide: resolve(__dirname, "guide.html"),
+        listingGuide: resolve(__dirname, "listing_guide.html"),
       },
     },
   },

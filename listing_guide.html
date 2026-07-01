@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listing 則 と half-angle 則の読み方 — 外眼筋作用シミュレータ 解説（眼科医向け）</title>
+    <style>
+      :root { --fg:#1a1d22; --muted:#5a626d; --line:#d8dce2; --accent:#2f6df0; --code:#0b1020; }
+      * { box-sizing: border-box; }
+      html, body { margin:0; }
+      body {
+        font-family: system-ui, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+        color: var(--fg); line-height: 1.75; background:#fbfcfe;
+      }
+      .wrap { max-width: 820px; margin: 0 auto; padding: 28px 22px 96px; }
+      header.top { border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 8px; }
+      header.top h1 { font-size: 24px; margin: 0 0 6px; line-height: 1.35; }
+      header.top .sub { color: var(--muted); font-size: 14px; margin: 0; }
+      nav.back { margin: 12px 0 4px; font-size: 14px; }
+      nav.back a { color: var(--accent); text-decoration: none; margin-right: 16px; }
+      nav.back a:hover { text-decoration: underline; }
+      h2 { font-size: 19px; margin: 34px 0 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+      h3 { font-size: 15px; margin: 20px 0 6px; }
+      p, li { font-size: 15px; }
+      ul, ol { padding-left: 22px; }
+      code { font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+        background:#eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+      pre { background: var(--code); color:#e6ecf7; padding: 12px 14px; border-radius: 8px;
+        overflow-x: auto; font-size: 13px; line-height: 1.55; }
+      pre code { background: none; color: inherit; padding: 0; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+      th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+      th { background:#eef1f5; }
+      .callout { border-left: 4px solid var(--accent); background:#eaf2ff; padding: 12px 16px;
+        border-radius: 0 6px 6px 0; margin: 16px 0; }
+      .warn { border-left: 4px solid #d9822b; background:#fff4e8; }
+      .muted { color: var(--muted); }
+      .small { font-size: 13px; }
+      .refs { font-size: 13.5px; }
+      .refs li { margin-bottom: 8px; }
+      .toc { background:#f5f6f8; border:1px solid var(--line); border-radius:8px; padding:12px 16px 12px 30px; }
+      .toc li { font-size: 14px; margin: 2px 0; }
+      .sw { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+      footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
+        color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>Listing 則 と half-angle 則の読み方<br /><span class="sub">外眼筋作用シミュレータ — 眼科医向け技術解説</span></h1>
+        <nav class="back">
+          <a href="./listing.html">← Listing / half-angle ページ</a>
+          <a href="./index.html">筋作用シミュレータ</a>
+          <a href="./guide.html">作用表の解説</a>
+        </nav>
+      </header>
+
+      <div class="callout warn">
+        <b>免責</b>：本ページと <a href="./listing.html">Listing ページ</a>は、3D 眼球運動の幾何（Listing 則・half‑angle 則）を
+        <strong>数式と対応させて可視化する教育・研究用デモ</strong>です。<strong>臨床判断・診療・手術計画・患者個別の予測には使用しないでください。医療機器ではありません。</strong>無保証で提供します。
+      </div>
+
+      <p>
+        このページは、<a href="./listing.html">Listing 則 / half‑angle ページ</a>に表示される 3D と数値が
+        「どの数式に対応するか」「何を確かめているか」を、計算核（<code>src/core/kinematics/listing.ts</code> ほか）と厳密に対応させて解説します。
+      </p>
+
+      <ul class="toc">
+        <li><a href="#l1">1. このページで確かめられること</a></li>
+        <li><a href="#l2">2. 座標系・回転ベクトル・Listing 面</a></li>
+        <li><a href="#l3">3. Listing 則（固視眼位の幾何）</a></li>
+        <li><a href="#l4">4. half-angle 則（角速度軸の傾き）</a></li>
+        <li><a href="#l5">5. 数値欄の定義（数式との対応）</a></li>
+        <li><a href="#l6">6. 「到達のしかた比べ」3パスの意味</a></li>
+        <li><a href="#l7">7. 3Dの凡例</a></li>
+        <li><a href="#l8">8. 臨床的・生理学的な位置づけ</a></li>
+        <li><a href="#l9">9. 限界</a></li>
+        <li><a href="#l10">10. 参考文献</a></li>
+        <li><a href="#l11">11. 検証の再現方法</a></li>
+      </ul>
+
+      <h2 id="l1">1. このページで確かめられること</h2>
+      <p>3D 回転は非可換であり、平面的な直感が通じません。このページは 2 つの法則を数式と動きで対応させます。</p>
+      <ul>
+        <li><b>Listing 則</b>：正常な固視眼位の「ねじれ（回旋）」は視線方向ごとに一意に定まり、回転ベクトルは 1 枚の平面（Listing 面）に乗る。</li>
+        <li><b>half‑angle 則</b>：固視を保つ運動の<strong>角速度軸</strong>は、眼位の偏心角 <code>E</code> の<strong>半分（E/2）</strong>だけ Listing 面から傾く。これが「偽の回旋」を生まない仕組み。</li>
+      </ul>
+
+      <h2 id="l2">2. 座標系・回転ベクトル・Listing 面</h2>
+      <p>右手系。第一眼位の視軸 <code>= +X</code>、<code>+Y</code> 鼻側、<code>+Z</code> 上方。眼位は単位クォータニオン <code>q</code>。</p>
+
+      <h3>回転ベクトル（Rodrigues 表現）</h3>
+      <p>回転角 <code>θ</code>・回転軸 <code>n̂</code> の姿勢を、次のベクトルで表します（<code>src/core/kinematics/rotvec.ts</code>）：</p>
+      <pre><code>rotvec = tan(θ/2)·n̂ = ( q_x/q_w , q_y/q_w , q_z/q_w )</code></pre>
+      <p>回転軸の向きをそのまま指す量なので、「回転軸がどの平面に乗るか」を調べるのに適しています。</p>
+
+      <h3>Listing 面</h3>
+      <p>
+        第一眼位の視軸を法線とする平面、すなわち <strong>YZ 平面（法線 +X）</strong>を Listing 面と定義します。
+        「固視眼位の回転ベクトルが Listing 面に乗る（＝ X 成分 = 0）」ことが Listing 則の数学的表現です。3D では水色の円板で表示されます。
+      </p>
+
+      <h2 id="l3">3. Listing 則（固視眼位の幾何）</h2>
+      <p>
+        Listing 則に従う固視眼位を、<strong>第一眼位（+X）から目標視線方向への「最短弧回転」</strong>として構成します
+        （<code>listingQuat</code>／<code>src/core/kinematics/listing.ts</code>）：
+      </p>
+      <pre><code>目標視線  d = R(q_gaze)·x̂
+q_Listing = shortestArc( x̂ , d )      // 回転軸 = x̂ × d</code></pre>
+      <p>
+        <code>x̂ × d</code> は必ず X 成分が 0、つまり回転軸は Listing 面（YZ）内にあります。よって回転ベクトルの X 成分も 0 となり、Listing 則が満たされます。
+        偏心角は
+      </p>
+      <pre><code>E = arccos( x̂ · d )     // 第一眼位と現在視線のなす角（度）</code></pre>
+      <p>で与えられます。</p>
+      <div class="callout">
+        注意：Listing 則の眼位は「Fick 座標で回旋 0」ではありません。斜め眼位では Fick で測った眼球回旋（<code>torsion</code>）は<strong>非ゼロ</strong>になります。
+        これは誤差ではなく、Listing 則が要求する<strong>視線ごとに一意な回旋</strong>そのものです（画面の「12時の傾き」がこれを示します）。
+      </div>
+
+      <h2 id="l4">4. half-angle 則（角速度軸の傾き）</h2>
+      <p>
+        2 眼位 <code>q₁ → q₂</code> の運動の角速度軸（固定系）は <code>ω ∝ vec(q₂ ⊗ q₁⁻¹)</code> で求まります（<code>velocityAxis</code>）。
+        Listing 則を保つ固視運動では、この角速度軸が Listing 面から傾く角度が
+      </p>
+      <pre><code>tilt = arcsin( |ω_x| )  ≈  E / 2</code></pre>
+      <p>
+        となります（<code>velocityAxisTilt</code>）。これが half‑angle 則です。「位置」は Listing 面に乗る（傾き 0）のに対し、「速度軸」はその<strong>半分</strong>だけ面から外れる、という位置と速度の幾何的な関係です。
+        3D では、面内の<span class="sw" style="background:#35e07a"></span>緑の位置ベクトルに対し、<span class="sw" style="background:#e8902f"></span>橙の角速度軸が E/2 だけ立ち上がって見えます。
+      </p>
+
+      <h2 id="l5">5. 数値欄の定義（数式との対応）</h2>
+      <p>右パネル「数値（数式との対応）」の各行は次を表示します。</p>
+      <table>
+        <thead><tr><th>表示</th><th>定義（実装）</th><th>読み方</th></tr></thead>
+        <tbody>
+          <tr><td>偏心角 E</td><td><code>arccos(x̂·d)</code></td><td>第一眼位からの視線のズレ角。</td></tr>
+          <tr><td>予測 E / 2</td><td><code>E/2</code></td><td>half‑angle 則の理論予測値。</td></tr>
+          <tr><td>角速度軸の傾き(実測)</td><td><code>arcsin(|ω_x|)</code></td><td>微小固視運動から数値的に測った傾き。<strong>E/2 とほぼ一致</strong>すれば則が成立。</td></tr>
+          <tr><td>回旋(Listing残差)</td><td><code>|rotvec_x| ×10⁻²</code></td><td>回転ベクトルの Listing 面からの逸脱。固視則なら <strong>≈ 0</strong>。</td></tr>
+          <tr><td>12時の傾き(回旋角)</td><td><code>fickFromQuat(q).torsion</code></td><td>角膜前面の時計の 12 時の傾き＝眼球回旋。+ 外旋 / − 内旋。</td></tr>
+          <tr><td>正解とのズレ</td><td>目標 Listing 姿勢との角度差</td><td>「到達のしかた比べ」再生時のみ。0 なら正解姿勢に一致。</td></tr>
+        </tbody>
+      </table>
+      <p class="small muted">
+        「角速度軸の傾き」「予測 E/2」は固視運動デモ（矢印表示）中に、「正解とのズレ」は「到達のしかた比べ」再生中に更新されます（モードにより一部は「—」）。
+      </p>
+
+      <h2 id="l6">6. 「到達のしかた比べ」3パスの意味</h2>
+      <p>
+        同じ目標眼位へ 3 通りの動かし方で到達させ、着地時の 12 時（回旋）を見比べます。3D 回転の<strong>非可換性</strong>を体感するのが狙いです。
+      </p>
+      <table>
+        <thead><tr><th>パス</th><th>構成（実装）</th><th>着地</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>① 1回転で到達</td>
+            <td>最短弧を 1 本の軸で補間<br /><code>slerp(I, q_Listing, s)</code></td>
+            <td>正解に一致。軸は Listing 面内、偽の回旋なし。</td>
+          </tr>
+          <tr>
+            <td>② half-angle 2段階</td>
+            <td>各段が Listing 則を保つ<br /><code>listingQuat(h·t,0)</code> → <code>listingQuat(h,v·t)</code></td>
+            <td>正解に一致。第2段の軸が E/2 傾く（half‑angle）ため回旋が残らない。</td>
+          </tr>
+          <tr>
+            <td>③ 半角なし 素朴2段階</td>
+            <td>頭部固定軸の素朴合成（Fick）<br /><code>gazeQuat(h·t,0)</code> → <code>gazeQuat(h,v·t)</code></td>
+            <td>12 時がズレて着地＝<strong>偽の回旋</strong>。half‑angle 補正がないため。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        ①②は同じ回旋（正解）に着地し、③だけがズレます。<strong>結論</strong>：頭部固定軸で素朴に回転を合成すると眼位依存の偽の回旋が蓄積する。
+        Listing 則／half‑angle 則は、これを防いで<strong>視線ごとに回旋を一意</strong>に保つ脳と眼球運動系の解です。
+      </p>
+
+      <h2 id="l7">7. 3Dの凡例</h2>
+      <ul>
+        <li><span class="sw" style="background:#1fb6c4"></span><b>水色の面</b>：Listing 面（YZ）。固視眼位の回転ベクトルはここに乗る。</li>
+        <li><span class="sw" style="background:#35e07a"></span><b>緑の矢印</b>：位置の回転ベクトル（第一眼位→現在）。面内にある。</li>
+        <li><span class="sw" style="background:#e8902f"></span><b>橙の矢印</b>：角速度軸（固視運動）。面から E/2 傾く＝half‑angle。</li>
+        <li><span class="sw" style="background:#ff4d6d"></span><b>赤い指針</b>：角膜前面の時計。12 時の傾き＝眼球の回旋。数値欄に外旋/内旋を併記。</li>
+        <li><span class="sw" style="background:#9fb0d0"></span><b>薄い指針</b>：正解（目標 Listing 姿勢）の 12 時。各パスがここに収束するか見る。</li>
+        <li><span class="sw" style="background:#b066ff"></span><b>紫</b>／<span class="sw" style="background:#ffd23f"></span><b>金の矢印</b>：到達比べで進行中の段の回転軸（紫＝第1段、金＝第2段）。</li>
+      </ul>
+
+      <h2 id="l8">8. 臨床的・生理学的な位置づけ</h2>
+      <p>
+        Listing 則はサッカードや固視といった<strong>頭部静止時の正常な 3D 眼位則</strong>で、視線方向ごとに眼球回旋を一意に定めます
+        （前庭性眼球運動などでは系統的に修正されます）。half‑angle 則はその速度領域での署名です。
+      </p>
+      <p>
+        機序としては、直筋の<strong>眼窩プーリー</strong>が力学的に half‑angle を実装するという「能動プーリー仮説（active pulley hypothesis）」が提唱されています。
+        本デモの③は「この仕組みが無ければどうなるか（偽の回旋）」を示すもので、実際の眼では脳とプーリーが①②の挙動を実現します。
+        斜筋麻痺などで観察される回旋偏位を理解するための<strong>幾何学的な枠組み</strong>として役立ちますが、本ページはあくまで教育デモであり、個別症例の予測には用いません。
+      </p>
+
+      <h2 id="l9">9. 限界</h2>
+      <ul>
+        <li>理想化した幾何モデル（雑音・個人差・前庭修正・調節性輻輳などは含まない）。</li>
+        <li>能動プーリーの力学そのものは実装しておらず、half‑angle は幾何として提示している。</li>
+        <li>数値は小数で丸め表示。残差が厳密に 0 でなく微小値に見えることがある。</li>
+      </ul>
+
+      <h2 id="l10">10. 参考文献</h2>
+      <ol class="refs">
+        <li>Tweed D, Vilis T. Geometric relations of eye position and velocity vectors during saccades. <i>Vision Res.</i> 1990;30(1):111–127.（位置と速度、half‑angle）</li>
+        <li>Haslwanter T. Mathematics of three‑dimensional eye rotations. <i>Vision Res.</i> 1995;35(12):1727–1739.（回転ベクトル／クォータニオン表現、Listing 面）</li>
+        <li>Demer JL, Oh SY, Poukens V. Evidence for active control of rectus extraocular muscle pulleys. <i>Invest Ophthalmol Vis Sci.</i> 2000;41(6):1280–1290.（能動プーリー仮説）</li>
+        <li>Clark RA, Miller JM, Demer JL. Three‑dimensional location of human rectus pulleys by path inflections in secondary gaze positions. <i>Invest Ophthalmol Vis Sci.</i> 2000;41(12):3787–3797.</li>
+      </ol>
+      <p class="small muted">
+        文献番号・巻号は標準的な書誌に基づく参考表示です。臨床・研究にあたっては必ず一次文献をご確認ください。
+      </p>
+
+      <h2 id="l11">11. 検証の再現方法</h2>
+      <p>受け入れ基準 §6（Listing 則・half‑angle 則）はテスト化されています（全 44 件の一部）。</p>
+      <pre><code>npm install
+npm test        # §6 を含む受け入れテスト
+npm run dev     # ローカルでページを起動</code></pre>
+      <p class="small">
+        ソース：<a href="https://github.com/gankobo/eom-simulator">github.com/gankobo/eom-simulator</a>
+      </p>
+
+      <footer>
+        外眼筋作用シミュレータ（eom-simulator）。
+        本ページの数式・符号規約は計算核 <code>src/core/kinematics/listing.ts</code> ほかの実装に対応します。
+        © 2026 gankobo — MIT License.
+      </footer>
+    </div>
+  </body>
+</html>

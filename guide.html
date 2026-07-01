@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数値の読み方と数理モデル — 外眼筋作用シミュレータ 解説（眼科医向け）</title>
+    <style>
+      :root { --fg:#1a1d22; --muted:#5a626d; --line:#d8dce2; --accent:#2f6df0; --code:#0b1020; }
+      * { box-sizing: border-box; }
+      html, body { margin:0; }
+      body {
+        font-family: system-ui, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+        color: var(--fg); line-height: 1.75; background:#fbfcfe;
+      }
+      .wrap { max-width: 820px; margin: 0 auto; padding: 28px 22px 96px; }
+      header.top { border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 8px; }
+      header.top h1 { font-size: 24px; margin: 0 0 6px; line-height: 1.35; }
+      header.top .sub { color: var(--muted); font-size: 14px; margin: 0; }
+      nav.back { margin: 12px 0 4px; font-size: 14px; }
+      nav.back a { color: var(--accent); text-decoration: none; margin-right: 16px; }
+      nav.back a:hover { text-decoration: underline; }
+      h2 { font-size: 19px; margin: 34px 0 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+      h3 { font-size: 15px; margin: 20px 0 6px; }
+      p, li { font-size: 15px; }
+      ul, ol { padding-left: 22px; }
+      code { font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+        background:#eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+      pre { background: var(--code); color:#e6ecf7; padding: 12px 14px; border-radius: 8px;
+        overflow-x: auto; font-size: 13px; line-height: 1.55; }
+      pre code { background: none; color: inherit; padding: 0; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+      th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+      th { background:#eef1f5; }
+      .callout { border-left: 4px solid var(--accent); background:#eaf2ff; padding: 12px 16px;
+        border-radius: 0 6px 6px 0; margin: 16px 0; }
+      .warn { border-left: 4px solid #d9822b; background:#fff4e8; }
+      .muted { color: var(--muted); }
+      .small { font-size: 13px; }
+      .refs { font-size: 13.5px; }
+      .refs li { margin-bottom: 8px; }
+      .toc { background:#f5f6f8; border:1px solid var(--line); border-radius:8px; padding:12px 16px 12px 30px; }
+      .toc li { font-size: 14px; margin: 2px 0; }
+      sup { line-height: 0; }
+      footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
+        color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>数値の読み方と数理モデル<br /><span class="sub">外眼筋作用シミュレータ — 眼科医向け技術解説</span></h1>
+        <nav class="back">
+          <a href="./index.html">← 筋作用シミュレータ</a>
+          <a href="./listing.html">Listing 則 / half-angle ページ</a>
+        </nav>
+      </header>
+
+      <div class="callout warn">
+        <b>免責</b>：本シミュレータは外眼筋の<strong>運動学（キネマティクス）を可視化する教育・研究用デモ</strong>です。
+        解剖パラメータは受け入れ基準（§11）を満たすよう構成した<strong>暫定値</strong>を含み、個々の患者の計測値ではありません。
+        <strong>臨床判断・診療・手術計画・患者個別の予測には使用しないでください。医療機器ではありません。</strong>無保証で提供します。
+      </div>
+
+      <p>
+        このページは、<a href="./index.html">筋作用シミュレータ</a>の作用表に表示される数値が
+        「何を計算した量か」「どう読むか」「どこまで妥当でどこからが近似か」を、実装（計算核 <code>src/core</code>）と
+        厳密に対応させて説明するものです。臨床用語（primary/secondary/tertiary action、内転/外転、外旋/内旋など）は
+        そのまま用います。数式は実装コードの式そのものです。
+      </p>
+
+      <ul class="toc">
+        <li><a href="#s1">1. 一言でいうと（数値の定義）</a></li>
+        <li><a href="#s2">2. 座標系と符号規約</a></li>
+        <li><a href="#s3">3. 作用ベクトルの定義（表の3列）</a></li>
+        <li><a href="#s4">4. なぜ行の和は1でなく、二乗和が1になるのか</a></li>
+        <li><a href="#s5">5. この数値が「表さない」もの（重要な限界）</a></li>
+        <li><a href="#s6">6. モデル階層 Tier0 / Tier1 と回旋軸の式</a></li>
+        <li><a href="#s7">7. 筋長の列</a></li>
+        <li><a href="#s8">8. 眼位依存の臨界点と検証（§11）</a></li>
+        <li><a href="#s9">9. 左右眼の扱い</a></li>
+        <li><a href="#s10">10. 解剖パラメータの出自と暫定性</a></li>
+        <li><a href="#s11">11. 既知の限界と今後の拡張</a></li>
+        <li><a href="#s12">12. 参考文献</a></li>
+        <li><a href="#s13">13. 検証の再現方法</a></li>
+      </ul>
+
+      <h2 id="s1">1. 一言でいうと（数値の定義）</h2>
+      <p>
+        作用表の <b>回旋・上下転・水平</b> の3値は、<strong>その筋を単独で収縮させたときに眼球が回転しようとする「瞬間回転軸」の向き</strong>を、
+        眼球自身の3つの軸（視軸まわり＝回旋、横軸まわり＝上下転、垂直軸まわり＝水平）に分解した<strong>方向余弦</strong>です。
+      </p>
+      <ul>
+        <li>各値は <code>−1〜+1</code> の無次元量。<b>絶対値が1に近い</b>ほど、その眼球軸に回転軸がよく揃っている（＝その方向の純粋な作用）。<b>0（画面では「—」）</b>はその軸まわりにほぼ作用しない。</li>
+        <li>符号は臨床の向きを表す（次節）。表示は <code>0.85 外旋</code> のように大きさ＋向きの語で示す。</li>
+        <li>これは古典的な <b>主作用 / 副作用 / 第三作用</b>（primary/secondary/tertiary action）の分解を、定量化したものに相当します。</li>
+      </ul>
+      <div class="callout">
+        重要な性質：これは回転軸の<strong>向き（単位ベクトル）</strong>であって、<strong>力・張力・トルク・回転量（度数）ではありません</strong>。
+        各行は内部で正規化されているため、<strong>筋どうしの数値の大小を「どちらが強いか」と読むことはできません</strong>（§5）。
+      </div>
+
+      <h2 id="s2">2. 座標系と符号規約</h2>
+      <p>計算はすべて<strong>右眼正準系</strong>（右手系, 単位 mm, 眼球半径 <code>R = 12 mm</code>）で行います。</p>
+      <table>
+        <thead><tr><th>軸</th><th>正方向</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>+X</code></td><td>前方</td><td>第一眼位の視軸（line of sight）</td></tr>
+          <tr><td><code>+Y</code></td><td>鼻側（nasal）</td><td>水平軸</td></tr>
+          <tr><td><code>+Z</code></td><td>上方（superior）</td><td>垂直軸</td></tr>
+        </tbody>
+      </table>
+      <p>
+        眼位は単位クォータニオン <code>q</code> で表し、Fick 角から次の順（intrinsic Z→Y→X）で合成します
+        （<code>src/core/kinematics/fick.ts</code>）：
+      </p>
+      <pre><code>q(h, v, τ) = q_Z(h) · q_Y(−v) · q_X(τ)</code></pre>
+      <table>
+        <thead><tr><th>角</th><th>回転軸</th><th>符号規約</th></tr></thead>
+        <tbody>
+          <tr><td>水平 <code>h</code></td><td>Z</td><td>+ 内転（adduction） / − 外転（abduction）</td></tr>
+          <tr><td>垂直 <code>v</code></td><td>Y（<code>−v</code> で合成）</td><td>+ 上転（supraduction） / − 下転（infraduction）</td></tr>
+          <tr><td>回旋 <code>τ</code></td><td>X</td><td>+ 外旋（excycloduction） / − 内旋（incycloduction）</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="s3">3. 作用ベクトルの定義（表の3列）</h2>
+      <p>
+        眼位 <code>q</code> における眼球固有の3軸（回転行列 <code>R(q)</code> の各列）を
+      </p>
+      <pre><code>l = R(q)·x̂   （視軸）
+t = R(q)·ŷ   （横軸）
+u = R(q)·ẑ   （垂直軸）</code></pre>
+      <p>
+        とし、筋の眼窩系での単位回旋軸を <code>a(q)</code> とすると、表の3値は <code>a</code> を各眼球軸へ射影した内積です
+        （<code>src/core/model/action.ts</code>）：
+      </p>
+      <pre><code>回旋  tor = a · l      （視軸まわり）  + 外旋 / − 内旋
+上下転 ver = a · t      （横軸まわり）  + 下転 / − 上転
+水平  hor = a · u      （垂直軸まわり）+ 内転 / − 外転</code></pre>
+      <p class="small muted">
+        （実装ではコード上の変数名が <code>l, t, v</code> ですが、本文では垂直角 <code>v</code> との混同を避けるため垂直軸を <code>u</code> と表記しています。）
+      </p>
+      <p>
+        内積 <code>a·l</code> は「回転軸 <code>a</code> と視軸 <code>l</code> のなす角の余弦」であり、<b>1 = 軸が完全に一致（その軸まわりの純回転）</b>、
+        <b>0 = 直交（その軸まわりには作用しない）</b>を意味します。眼位 <code>q</code> が変われば <code>l,t,u</code> も <code>a</code>（Tier1）も変わるため、
+        <strong>同じ筋でも眼位ごとに3値は変化します</strong>。これが本シミュレータの主眼です。
+      </p>
+
+      <h2 id="s4">4. なぜ行の和は1でなく、二乗和が1になるのか</h2>
+      <p>
+        <code>a</code> は単位ベクトル、<code>{l, t, u}</code> は正規直交基底です。したがって3値は <code>a</code> の直交3方向への成分（方向余弦）であり、
+      </p>
+      <pre><code>tor² + ver² + hor² = ‖a‖² = 1</code></pre>
+      <p>
+        が成り立ちます。<strong>単純な和が1になる量ではありません</strong>（分け前・確率ではない）。
+        例：0.8 と 0.6 は和 1.4 ですが、0.8² + 0.6² = 1.00。方位磁針の針を東西・南北成分に分けるのと同じで、成分どうしを足すことに意味はありません。
+      </p>
+      <p>
+        <b>列（縦）</b>についても、各筋が独立に持つ作用を並べただけで、合計に意味はありません
+        （複数筋が同じ向きへ同時に働くのは正常です）。表示は小数第2位に丸めるため、二乗和はぴったり 1.00 に見えないことがあります。
+      </p>
+
+      <h2 id="s5">5. この数値が「表さない」もの（重要な限界）</h2>
+      <p>臨床解釈で誤読しやすい点を明示します。この数値は<strong>幾何学的（運動学的）な回転軸の向きのみ</strong>を表し、次を<strong>含みません</strong>：</p>
+      <ul>
+        <li><b>筋張力・力・トルク</b>：張力やモーメントアーム長は掛かっていません。正規化により大きさ情報は意図的に捨てられています。</li>
+        <li><b>回転量（度数）</b>：どれだけ回るかではなく、どの向きに回るかです。</li>
+        <li><b>筋間の相対的な強さ</b>：各行が独立に正規化されるため、2つの筋がともに「1.00 内転」でも、それは<strong>軸の向きが同じ</strong>という意味で、トルクが等しいという意味ではありません。</li>
+        <li><b>共同運動・拮抗・神経支配</b>：Hering / Sherrington 則、共同筋・拮抗筋の相互作用、length‑tension は反映していません（各筋を単独・等尺的に見た幾何量です）。</li>
+      </ul>
+      <div class="callout">
+        要するに、この表は<strong>「各筋の作用軸の向き（単位ベクトル）を眼位ごとに示すもの」</strong>です。
+        力ベクトルを張力×モーメントアームで重み付けして<strong>合成トルク</strong>を出すモデルとは別物であり、本画面では行間・筋間で大きさを足したり比べたりする設計にはなっていません。
+      </div>
+
+      <h2 id="s6">6. モデル階層 Tier0 / Tier1 と回旋軸の式</h2>
+      <p>UI の「モデル」で切り替えられる2階層は、回旋軸 <code>a(q)</code> の作り方が異なります。</p>
+
+      <h3>Tier0 — kinematic（教育用ベースライン）</h3>
+      <p>各筋に<strong>眼窩固定の単位回旋軸</strong>を与えます。眼位に依存しません（<code>src/core/model/kinematic.ts</code>）。</p>
+      <pre><code>a = normalize(fixedAxis)   // 眼位非依存</code></pre>
+      <p class="small muted">第三作用の眼位依存を持たないため、Tier1 との対比用のリファレンスとして残しています。</p>
+
+      <h3>Tier1 — string model（Robinson 1975 / SQUINT）</h3>
+      <p>
+        付着部 <code>P</code> と機能的起始 <code>Q</code> から、<strong>眼位ごとに回旋軸を再計算</strong>します
+        （<code>src/core/model/string.ts</code>）：
+      </p>
+      <pre><code>P = R(q)·P0            // 付着部（眼球とともに回転して移動）
+Q = origin            // 機能的起始（眼窩固定：直筋 pulley / 斜筋 滑車）
+a(q) = normalize(P × Q)</code></pre>
+      <p>
+        眼球中心・起始 <code>Q</code>・付着 <code>P</code> を通る筋の張る平面に直交する軸が <code>P × Q</code> で与えられる、という string model の標準的な帰結です。
+        眼位で <code>P</code> が動くため軸が回り、<strong>第三作用の眼位依存が自然に現れます</strong>
+        （例：外転位で上直筋 SR の水平・回旋成分が減衰し、純粋な上転筋に近づく）。
+      </p>
+      <div class="callout warn">
+        <b>Tier1 の近似（MVP）</b>：現状は<strong>付着点近似</strong>で、接触弧補正（arc of contact／接点での力作用）は未実装、
+        <strong>能動プーリー（active pulley）は未導入</strong>（起始 <code>Q</code> は固定）。筋長は <code>Q→P</code> の直線長です。これらは後続 Phase で拡張予定です（§11）。
+      </div>
+
+      <h2 id="s7">7. 筋長の列</h2>
+      <p>作用表の <code>長(mm)</code> は、機能的起始 <code>Q</code> から付着部 <code>P</code> までの<strong>直線距離</strong>です。</p>
+      <pre><code>L = ‖P − Q‖</code></pre>
+      <p>
+        将来の length‑tension（張力–長さ関係）の入力として用いる予定の値で、<strong>眼球面に沿う真の経路長（接触弧を含む）ではありません</strong>。
+        現段階では相対変化の目安としてお読みください。
+      </p>
+
+      <h2 id="s8">8. 眼位依存の臨界点と検証（§11）</h2>
+      <p>
+        受け入れ基準 §11 を単体テスト化し（<code>npm test</code> で <strong>44 件すべて緑</strong>）、それを満たすように解剖パラメータを同定しています。
+        代表的な検証点は次のとおりです。
+      </p>
+      <table>
+        <thead><tr><th>基準</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>§11.1</td><td>第一眼位の作用分解が教科書の作用表に <code>±0.05</code> 一致し、主作用が正しい（6筋）。</td></tr>
+          <tr><td>§11.2</td><td>回旋成分の 0 交差：直筋は<strong>外転 ≈ 23°</strong>、斜筋は<strong>内転 ≈ 51°</strong>。</td></tr>
+          <tr><td>§11.3</td><td>上直筋 SR は<strong>外転 23° で純粋上下転</strong>（回旋 ≈ 0、水平成分が減衰）。</td></tr>
+          <tr><td>§6</td><td>Listing 則（回転ベクトルが Listing 面上）と half‑angle 則（角速度軸の傾き = E/2）。<a href="./listing.html">別ページで可視化</a>。</td></tr>
+        </tbody>
+      </table>
+      <p class="small muted">
+        UI のプリセット「外転23°」「内転51°」は、この 0 交差の眼位に対応します。押して回旋列が「—」に近づくのを確認できます。
+      </p>
+
+      <h2 id="s9">9. 左右眼の扱い</h2>
+      <p>
+        単眼の筋作用は左右で臨床的に同一（教科書の作用表は両眼共通）です。本実装は<strong>常に右眼正準系で計算</strong>し、同じ臨床ラベル（内転／外旋など）で報告することで左眼でも正しくなります。
+        左眼（OS）に固有なのは <b>(1) 3D 表示の左右鏡映</b> と <b>(2) 将来の両眼注視フレーム配置</b> だけで、これらは表示・両眼層が担当します。
+      </p>
+      <p class="small muted">
+        補足（設計上の注意）：解剖を世界座標で <code>Y</code> 反転して同じ <code>P × Q</code> に通すと、外積は擬ベクトルのため符号が反転し左内直筋が「外転」になってしまいます。よって物理計算では鏡映しません。
+      </p>
+
+      <h2 id="s10">10. 解剖パラメータの出自と暫定性</h2>
+      <p>
+        <code>src/core/data/anatomy.ts</code> の付着部 <code>P0</code>・起始 <code>Q</code> は、輪部からの付着距離（§7.2）・筋平面角（直筋 23° / 斜筋 51°, §7.3）・滑車／起始の象限（§7.5）から構成し、
+        §11 の作用と 0 交差に一致するよう同定した<strong>暫定スターター値</strong>です。<strong>個々の患者の計測値でも、確定した集団平均値でもありません。</strong>
+      </p>
+      <p>
+        Phase 3 以降で <b>Clark 2000（IOVS 41:3787–97）Table 2</b> 等の一次文献の実測プーリー座標へ差し替える前提で、各値に <code>source</code> を付記しています。
+        現段階の数値は<strong>定性的・教育的</strong>にお読みください。
+      </p>
+
+      <h2 id="s11">11. 既知の限界と今後の拡張</h2>
+      <ul>
+        <li>接触弧補正なし（付着点近似）。→ 接点 <code>T</code> での力作用・経路長を後続で追加。</li>
+        <li>能動プーリー未導入（起始固定）。→ active pulley（Demer ら）を Phase で導入予定。</li>
+        <li>力学（張力・length‑tension・平衡）は未実装。本画面は運動学的な作用軸のみ。</li>
+        <li>両眼・臨床モジュール（麻痺／手術／Hess／Bielschowsky）は将来 Phase。</li>
+      </ul>
+      <p class="small muted">ロードマップ：P2 平衡ソルバ → P3 active pulley → P4 両眼 → P5 臨床。</p>
+
+      <h2 id="s12">12. 参考文献</h2>
+      <ol class="refs">
+        <li>Robinson DA. A quantitative analysis of extraocular muscle cooperation and squint. <i>Invest Ophthalmol.</i> 1975.（Tier1 string model／SQUINT の基礎）</li>
+        <li>Clark RA, Miller JM, Demer JL. Three‑dimensional location of human rectus pulleys by path inflections in secondary gaze positions. <i>Invest Ophthalmol Vis Sci.</i> 2000;41(12):3787–3797.（解剖パラメータの差し替え先）</li>
+        <li>Haslwanter T. Mathematics of three‑dimensional eye rotations. <i>Vision Res.</i> 1995;35(12):1727–1739.（クォータニオン／回転ベクトル表現）</li>
+        <li>Tweed D, Vilis T. Geometric relations of eye position and velocity vectors during saccades. <i>Vision Res.</i> 1990;30(1):111–127.（Listing 則・half‑angle 則）</li>
+        <li>Demer JL. The orbital pulley system: a revolution in concepts of orbital anatomy. <i>Ann N Y Acad Sci.</i> 2002.（能動プーリー）</li>
+      </ol>
+      <p class="small muted">
+        文献番号・巻号は標準的な書誌に基づく参考表示です。臨床・研究にあたっては必ず一次文献をご確認ください。
+      </p>
+
+      <h2 id="s13">13. 検証の再現方法</h2>
+      <p>ソースを取得し、次で §11 の受け入れテスト（44 件）を実行できます。</p>
+      <pre><code>npm install
+npm test        # §11 受け入れテスト（44 件）
+npm run dev     # ローカルでシミュレータを起動</code></pre>
+      <p class="small">
+        ソース：<a href="https://github.com/gankobo/eom-simulator">github.com/gankobo/eom-simulator</a>
+      </p>
+
+      <footer>
+        外眼筋作用シミュレータ（eom-simulator）／ 現状 Phase 1。
+        本ページの数式・符号規約は計算核 <code>src/core</code> の実装に対応します。
+        © 2026 gankobo — MIT License.
+      </footer>
+    </div>
+  </body>
+</html>
