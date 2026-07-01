@@ -19,7 +19,8 @@
 
 ## 触ってみる
 
-- **オンライン（リンクで誰でも）:** 公開後にURLを追記します
+- **オンライン（リンクで誰でも）:** **https://gankobo.github.io/eom-simulator/**
+  （Listing 則ページ: https://gankobo.github.io/eom-simulator/listing.html ）
 - **手元で動かす:**
 
   ```bash

@@ -21,7 +21,8 @@ after the acceptance criteria (§11) were locked in as unit tests.
 
 ## Try it
 
-- **Online (anyone with the link):** URL will be added after publishing
+- **Online (anyone with the link):** **https://gankobo.github.io/eom-simulator/**
+  (Listing's-law page: https://gankobo.github.io/eom-simulator/listing.html )
 - **Run locally:**
 
   ```bash
