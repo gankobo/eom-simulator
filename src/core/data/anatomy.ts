@@ -60,10 +60,10 @@ export const RIGHT_EYE_ANATOMY: Record<MuscleId, MuscleAnatomy> = {
     insertion: [6.88, 9.83, 0.0],
     origin: [-26.82, 8.05, 0.0],
     fixedAxis: [0, 0, 1],
-    pulley: [-3.0, 14.0, -0.3],
+    pulley: [-3.0, 14.2, -0.3],
     source:
       "§7.2 輪部5.5mm + §14.2 純内転軸; verify_final.py で §11 確認。" +
-      "pulley: Clark 2000 IOVS 41:3787-97 Table 2 (3後方/14.0鼻側/0.3下方)",
+      "pulley: Clark 2000 IOVS 41:3787-97 Table 2 (3後方/14.2鼻側/0.3下方)",
   },
   LR: {
     insertion: [5.63, -10.6, 0.0],

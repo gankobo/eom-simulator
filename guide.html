@@ -221,12 +221,19 @@ R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
         <ul>
           <li><b>可換性と Listing 則</b>：作用軸が半角で回ることで、眼球運動が実質的に<strong>可換（順序によらない）</strong>になり、固視眼位が Listing 面に乗ります。脳が眼位ごとの複雑な回旋補正をせずに済む仕組みを、眼窩の結合組織が力学的に担っている、という現代的理解です（<a href="./listing.html">half‑angle の可視化ページ</a>）。</li>
           <li><b>古典 23° / 51° の精密化</b>：Tier0/Tier1 が示す「直筋 外転23°・斜筋 内転51° で純粋上下転」は<strong>第一眼位の筋平面に基づく近似</strong>です。half‑angle 則を入れると偏心視での作用軸が補正されるため、Tier2 では回旋 0 交差の眼位がこの角とは一致しません（バグではなく、より現実に近い帰結）。教育上は Tier0/Tier1 で古典像を、Tier2 で精密像を対比してください。</li>
-          <li><b>プーリー病態</b>：プーリーの位置異常（pulley heterotopy）や加齢によるずれは、麻痺がなくても A/V パターンや上下・回旋偏位を生みます。「筋の走行を規定するのは付着部だけでない」という視点が診断に効きます。手術では付着部を動かしてもプーリーはほぼ動きません（Clark 2006）。</li>
+          <li><b>プーリー病態</b>：プーリーの位置異常（pulley heterotopy）や加齢によるずれは、麻痺がなくても A/V パターンや上下・回旋偏位を生みます。「筋の走行を規定するのは付着部だけでない」という視点が診断に効きます。手術では付着部を動かしてもプーリーはほぼ動きません（Clark 2006）。加齢では外直筋–上直筋バンドの脆弱化で外直筋プーリーが下垂し、遠見内斜視（divergence insufficiency）や小さな上下・回旋偏位をきたす <b>sagging eye 症候群</b> が知られます（Chaudhuri &amp; Demer 2013）。本モデルの座標は健常若年者の集団平均であり、こうした加齢・病態は表しません。</li>
+        </ul>
+      </div>
+      <div class="callout">
+        <b>学術的な但し書き（誠実な限界）</b>
+        <ul>
+          <li><b>係数 k = 0.5 は理想値です</b>。half‑angle 則は「固視眼位が Listing 面に乗る」ための幾何学的必然として位置領域では厳密に 0.5 ですが、実測の傾き係数は方向・個体・運動種で幅があります。衝動性運動（サッカード）では水平で約 0.5、垂直で約 0.35 程度、前庭動眼反射（VOR）ではさらに小さく<strong>約 0.25（quarter‑angle）</strong>です（Tweed &amp; Vilis 1990；Thurtell 2011；Misslisch/Tweed/Hess 1994）。本モデルは視覚誘導運動を代表する 0.5 を採用しています。</li>
+          <li><b>「能動」かどうかは今も論争があります</b>。プーリーが機能的起始として存在し、half‑angle と Listing 則を力学的に生むこと自体は広く合意されています（近年は Wei, Mutawak &amp; Demer 2022 の力学シミュレーションが「直筋の走行は眼球回転角の約半分だけ屈曲し、これが Listing 則の実装に必要十分」と裏づけ）。一方、プーリーが眼窩層の収縮で<strong>能動的に</strong>移動するという能動プーリー説の「強い形」には批判もあります（Miller 2019 と Demer/Clark 2020 の応酬）。<strong>本 Tier2 が依拠するのは、論争の少ない受動的なプーリー幾何（half‑angle）だけ</strong>で、能動的移動の動力学そのものは仮定していません。</li>
         </ul>
       </div>
       <p class="small muted">
-        直筋のプーリー座標は <b>Clark 2000（IOVS 41:3787–97）Table 2</b> の実測値（球中心基準）を用い、3D 表示で「眼を動かすとプーリーが動く」様子（実効位置と第一眼位からの移動）を示します。
-        斜筋は同論文の対象外のため、滑車／眼窩底の機能的起始を流用しています。作用軸の計算自体は上記の half‑angle 則で行います。
+        直筋のプーリー座標は <b>Clark 2000（IOVS 41:3787–97）Table 2</b> の実測値（球中心基準）を用い、3D 表示で「眼を動かすとプーリーが動く」様子（実効位置と第一眼位からの移動）を示します。2026 年時点でもこれを置き換える標準データセットは報告されておらず、後続研究もこの座標を前提としています。
+        斜筋は同論文の対象外のため、滑車（上斜筋）／眼窩底付近（下斜筋、下直筋プーリーと連結）の機能的起始を流用しています。作用軸の計算は 6 筋すべてで上記の half‑angle 則を適用しており、上斜筋は広い強膜付着、下斜筋は連結プーリーによって、いずれも実際に半角的に振る舞うことが知られています（Demer 2003, 2006）。
       </p>
 
       <h2 id="s7">7. 筋長の列</h2>
@@ -279,7 +286,9 @@ R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
       <h2 id="s11">11. 既知の限界と今後の拡張</h2>
       <ul>
         <li>接触弧補正なし（付着点近似）。→ 接点 <code>T</code> での力作用・経路長を後続で追加。</li>
-        <li>Tier2 の能動プーリーは half‑angle 則を運動学的に実装したもの（結合係数 k=0.5）。プーリーの前後移動そのものの動力学（Kono 2002 の tertiary 実測差）や斜筋プーリーの実測値差し替えは今後。</li>
+        <li>Tier2 の能動プーリーは half‑angle 則を運動学的に実装したもの（結合係数 k=0.5 固定）。係数を可変にする（方向別・運動種別）拡張、プーリーの前後移動そのものの動力学（Kono 2002 の tertiary 実測差）、斜筋プーリーの実測座標への差し替えは今後。</li>
+        <li>近見（輻輳）時に Listing 面が耳側へ約 1/4 輻輳角だけ傾く挙動（extended Listing 則 / quarter‑angle：Mok 1992；van Rijn &amp; van den Berg 1993）と、VOR での quarter‑angle は、いずれも<strong>両眼モデル（P4）や運動モードの切替が前提</strong>のため本 Phase では未実装。</li>
+        <li>単眼の筋作用に関わる分節性神経支配（compartmental innervation：水平直筋が上下分画で別々に制御されうる）は張力入力を要する二次効果で、運動学のみの本モデルでは扱いません（Demer ら 2011）。</li>
         <li>力学（張力・length‑tension・平衡）は未実装。本画面は運動学的な作用軸のみ。</li>
         <li>両眼・臨床モジュール（麻痺／手術／Hess／Bielschowsky）は将来 Phase。</li>
       </ul>
@@ -294,6 +303,14 @@ R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
         <li>Demer JL. The orbital pulley system: a revolution in concepts of orbital anatomy. <i>Ann N Y Acad Sci.</i> 2002.（能動プーリー）</li>
         <li>Kono R, Clark RA, Demer JL. Active pulleys: magnetic resonance imaging of rectus muscle paths in tertiary gazes. <i>Invest Ophthalmol Vis Sci.</i> 2002;43(7):2179–2188.（能動プーリーの tertiary 実測）</li>
         <li>Clark RA, Demer JL. Effect of aging on human rectus extraocular muscle paths… / horizontal rectus surgery on pulley positions. <i>Invest Ophthalmol Vis Sci.</i> 2006.（手術でプーリーはほぼ動かない）</li>
+        <li>Demer JL. Current concepts of mechanical and neural factors in ocular motility. <i>Curr Opin Neurol.</i> 2006;19(1):4–13.（能動プーリー説の総説・half‑angle の力学的根拠）</li>
+        <li>Demer JL, et al. Evidence for a pulley of the inferior oblique muscle. <i>Invest Ophthalmol Vis Sci.</i> 2003;44(9):3856–3865.（下斜筋の機能的プーリー・半角挙動）</li>
+        <li>Wei WL, Mutawak B, Demer JL. Biomechanical modeling of actively controlled rectus extraocular muscle pulleys. <i>Sci Rep.</i> 2022;12:5806.（力学モデルで half‑angle が創発することを裏づけ）</li>
+        <li>Thurtell MJ, et al. Three‑dimensional kinematics of saccadic eye movements: is the half‑angle rule obeyed? <i>Ann N Y Acad Sci.</i> 2011.（係数は方向依存：水平≈0.5／垂直≈0.35）</li>
+        <li>van Rijn LJ, van den Berg AV. Binocular eye orientation during fixations: Listing's law extended to include eye vergence. <i>Vision Res.</i> 1993;33(5–6):691–708.（輻輳時の quarter‑angle）</li>
+        <li>Misslisch H, Tweed D, Hess BJM. Rotational kinematics of the human vestibulo‑ocular reflex III: Listing's law. <i>J Neurophysiol.</i> 1994;72(5):2490–2502.（VOR は quarter‑angle）</li>
+        <li>Miller JM. EOM pulleys and sequelae: a critical review. <i>Invest Ophthalmol Vis Sci.</i> 2019;60(15):5052–5058.（能動プーリー説への批判／Demer &amp; Clark 2020 の反論を含む）</li>
+        <li>Chaudhuri Z, Demer JL. Sagging eye syndrome: connective tissue involution as a cause of horizontal and vertical strabismus in older patients. <i>JAMA Ophthalmol.</i> 2013;131(5):619–625.（加齢によるプーリー下垂）</li>
       </ol>
       <p class="small muted">
         文献番号・巻号は標準的な書誌に基づく参考表示です。臨床・研究にあたっては必ず一次文献をご確認ください。
