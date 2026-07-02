@@ -74,7 +74,7 @@
         <li><a href="#s3">3. 作用ベクトルの定義（表の3列）</a></li>
         <li><a href="#s4">4. なぜ行の和は1でなく、二乗和が1になるのか</a></li>
         <li><a href="#s5">5. この数値が「表さない」もの（重要な限界）</a></li>
-        <li><a href="#s6">6. モデル階層 Tier0 / Tier1 と回旋軸の式</a></li>
+        <li><a href="#s6">6. モデル階層 Tier0 / Tier1 / Tier2 と回旋軸の式</a></li>
         <li><a href="#s7">7. 筋長の列</a></li>
         <li><a href="#s8">8. 眼位依存の臨界点と検証（§11）</a></li>
         <li><a href="#s9">9. 左右眼の扱い</a></li>
@@ -173,8 +173,12 @@ u = R(q)·ẑ   （垂直軸）</code></pre>
         力ベクトルを張力×モーメントアームで重み付けして<strong>合成トルク</strong>を出すモデルとは別物であり、本画面では行間・筋間で大きさを足したり比べたりする設計にはなっていません。
       </div>
 
-      <h2 id="s6">6. モデル階層 Tier0 / Tier1 と回旋軸の式</h2>
-      <p>UI の「モデル」で切り替えられる2階層は、回旋軸 <code>a(q)</code> の作り方が異なります。</p>
+      <h2 id="s6">6. モデル階層 Tier0 / Tier1 / Tier2 と回旋軸の式</h2>
+      <p>
+        UI の「モデル」で切り替えられる3階層は、回旋軸 <code>a(q)</code> の作り方が異なります。
+        「3モデル比較」を ON にすると、同じ眼位での3本の作用軸を線種で重ねて表示します
+        （<b>点線</b>=Tier0／<b>破線</b>=Tier1／<b>実線</b>=Tier2）。第一眼位では3本が一致し、眼を偏心させるほど分かれます。
+      </p>
 
       <h3>Tier0 — kinematic（教育用ベースライン）</h3>
       <p>各筋に<strong>眼窩固定の単位回旋軸</strong>を与えます。眼位に依存しません（<code>src/core/model/kinematic.ts</code>）。</p>
@@ -195,9 +199,35 @@ a(q) = normalize(P × Q)</code></pre>
         （例：外転位で上直筋 SR の水平・回旋成分が減衰し、純粋な上転筋に近づく）。
       </p>
       <div class="callout warn">
-        <b>Tier1 の近似（MVP）</b>：現状は<strong>付着点近似</strong>で、接触弧補正（arc of contact／接点での力作用）は未実装、
-        <strong>能動プーリー（active pulley）は未導入</strong>（起始 <code>Q</code> は固定）。筋長は <code>Q→P</code> の直線長です。これらは後続 Phase で拡張予定です（§11）。
+        <b>Tier1 の近似</b>：<strong>付着点近似</strong>で接触弧補正（arc of contact）は未実装、起始 <code>Q</code> は<strong>眼窩固定</strong>（受動プーリー）。
+        このため斜め眼位（tertiary gaze）では引っ張り方向の眼位依存が不足します。これを補うのが次の Tier2 です。
       </div>
+
+      <h3>Tier2 — active pulley（能動プーリー / half‑angle 則）</h3>
+      <p>
+        実際の直筋は赤道近傍の<strong>結合組織プーリー（Tenon 嚢の袖）</strong>を通り、これが筋の機能的起始として働きます。
+        プーリーは眼球運動にあわせて前後へ<strong>能動的に移動</strong>し（active pulley, Demer ら）、その結果
+        <strong>筋の作用軸が「眼球回転角の半分」だけ回ります</strong>。これが <b>half‑angle 則</b>です
+        （<code>src/core/model/pulley.ts</code>）：
+      </p>
+      <pre><code>a(q) = R^(1/2)(q) · a₀        // a₀ = 第一眼位の作用軸（= Tier1 の primary = 教科書値）
+R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
+      <p>
+        第一眼位（<code>q = I</code>）では <code>R^(1/2) = I</code> なので <code>a = a₀</code>、すなわち §11.1 の教科書の作用分解を<strong>厳密に保ちます</strong>。
+        眼を偏心させると作用軸が偏心角の半分だけ傾き、Tier0（傾き 0＝眼窩固定）と「眼球固定（傾き＝偏心角そのもの）」のちょうど中間になります。
+      </p>
+      <div class="callout">
+        <b>なぜ half‑angle が重要か（臨床的意義）</b>
+        <ul>
+          <li><b>可換性と Listing 則</b>：作用軸が半角で回ることで、眼球運動が実質的に<strong>可換（順序によらない）</strong>になり、固視眼位が Listing 面に乗ります。脳が眼位ごとの複雑な回旋補正をせずに済む仕組みを、眼窩の結合組織が力学的に担っている、という現代的理解です（<a href="./listing.html">half‑angle の可視化ページ</a>）。</li>
+          <li><b>古典 23° / 51° の精密化</b>：Tier0/Tier1 が示す「直筋 外転23°・斜筋 内転51° で純粋上下転」は<strong>第一眼位の筋平面に基づく近似</strong>です。half‑angle 則を入れると偏心視での作用軸が補正されるため、Tier2 では回旋 0 交差の眼位がこの角とは一致しません（バグではなく、より現実に近い帰結）。教育上は Tier0/Tier1 で古典像を、Tier2 で精密像を対比してください。</li>
+          <li><b>プーリー病態</b>：プーリーの位置異常（pulley heterotopy）や加齢によるずれは、麻痺がなくても A/V パターンや上下・回旋偏位を生みます。「筋の走行を規定するのは付着部だけでない」という視点が診断に効きます。手術では付着部を動かしてもプーリーはほぼ動きません（Clark 2006）。</li>
+        </ul>
+      </div>
+      <p class="small muted">
+        直筋のプーリー座標は <b>Clark 2000（IOVS 41:3787–97）Table 2</b> の実測値（球中心基準）を用い、3D 表示で「眼を動かすとプーリーが動く」様子（実効位置と第一眼位からの移動）を示します。
+        斜筋は同論文の対象外のため、滑車／眼窩底の機能的起始を流用しています。作用軸の計算自体は上記の half‑angle 則で行います。
+      </p>
 
       <h2 id="s7">7. 筋長の列</h2>
       <p>作用表の <code>長(mm)</code> は、機能的起始 <code>Q</code> から付着部 <code>P</code> までの<strong>直線距離</strong>です。</p>
@@ -209,20 +239,22 @@ a(q) = normalize(P × Q)</code></pre>
 
       <h2 id="s8">8. 眼位依存の臨界点と検証（§11）</h2>
       <p>
-        受け入れ基準 §11 を単体テスト化し（<code>npm test</code> で <strong>44 件すべて緑</strong>）、それを満たすように解剖パラメータを同定しています。
+        受け入れ基準 §11 を単体テスト化し（<code>npm test</code> で <strong>66 件すべて緑</strong>）、それを満たすように解剖パラメータを同定しています。
         代表的な検証点は次のとおりです。
       </p>
       <table>
-        <thead><tr><th>基準</th><th>内容</th></tr></thead>
+        <thead><tr><th>基準</th><th>内容</th><th>対象</th></tr></thead>
         <tbody>
-          <tr><td>§11.1</td><td>第一眼位の作用分解が教科書の作用表に <code>±0.05</code> 一致し、主作用が正しい（6筋）。</td></tr>
-          <tr><td>§11.2</td><td>回旋成分の 0 交差：直筋は<strong>外転 ≈ 23°</strong>、斜筋は<strong>内転 ≈ 51°</strong>。</td></tr>
-          <tr><td>§11.3</td><td>上直筋 SR は<strong>外転 23° で純粋上下転</strong>（回旋 ≈ 0、水平成分が減衰）。</td></tr>
-          <tr><td>§6</td><td>Listing 則（回転ベクトルが Listing 面上）と half‑angle 則（角速度軸の傾き = E/2）。<a href="./listing.html">別ページで可視化</a>。</td></tr>
+          <tr><td>§11.1</td><td>第一眼位の作用分解が教科書の作用表に <code>±0.05</code> 一致し、主作用が正しい（6筋）。</td><td>Tier0/1/2</td></tr>
+          <tr><td>§11.2</td><td>回旋成分の 0 交差：直筋は<strong>外転 ≈ 23°</strong>、斜筋は<strong>内転 ≈ 51°</strong>（古典像）。</td><td>Tier0/1</td></tr>
+          <tr><td>§11.3</td><td>上直筋 SR は<strong>外転 23° で純粋上下転</strong>（回旋 ≈ 0、水平成分が減衰）。</td><td>Tier1</td></tr>
+          <tr><td>Tier2</td><td>half‑angle：作用軸が偏心角の半分だけ傾く（垂直偏心の水平直筋で厳密）。斜め眼位で Tier1 より half‑angle をよく保つ。</td><td>Tier2</td></tr>
+          <tr><td>§6</td><td>Listing 則（回転ベクトルが Listing 面上）と half‑angle 則（角速度軸の傾き = E/2）。<a href="./listing.html">別ページで可視化</a>。</td><td>運動学</td></tr>
         </tbody>
       </table>
       <p class="small muted">
-        UI のプリセット「外転23°」「内転51°」は、この 0 交差の眼位に対応します。押して回旋列が「—」に近づくのを確認できます。
+        UI のプリセット「外転23°」「内転51°」は古典の 0 交差の眼位です。<b>Tier0/Tier1</b> では回旋列が「—」に近づきます。
+        <b>Tier2</b> は half‑angle 則により作用軸が半分だけ回るため、同じ眼位でも回旋は完全には消えません（§6 の Tier2 解説を参照）。
       </p>
 
       <h2 id="s9">9. 左右眼の扱い</h2>
@@ -236,22 +268,22 @@ a(q) = normalize(P × Q)</code></pre>
 
       <h2 id="s10">10. 解剖パラメータの出自と暫定性</h2>
       <p>
-        <code>src/core/data/anatomy.ts</code> の付着部 <code>P0</code>・起始 <code>Q</code> は、輪部からの付着距離（§7.2）・筋平面角（直筋 23° / 斜筋 51°, §7.3）・滑車／起始の象限（§7.5）から構成し、
+        <code>src/core/data/anatomy.ts</code> の付着部 <code>P0</code>・起始 <code>Q</code>（Tier0/Tier1 が使用）は、輪部からの付着距離（§7.2）・筋平面角（直筋 23° / 斜筋 51°, §7.3）・滑車／起始の象限（§7.5）から構成し、
         §11 の作用と 0 交差に一致するよう同定した<strong>暫定スターター値</strong>です。<strong>個々の患者の計測値でも、確定した集団平均値でもありません。</strong>
       </p>
       <p>
-        Phase 3 以降で <b>Clark 2000（IOVS 41:3787–97）Table 2</b> 等の一次文献の実測プーリー座標へ差し替える前提で、各値に <code>source</code> を付記しています。
-        現段階の数値は<strong>定性的・教育的</strong>にお読みください。
+        一方、<b>Tier2 のプーリー座標</b>（直筋）は <b>Clark 2000（IOVS 41:3787–97）Table 2</b> の実測値（健常者 MRI, 球中心基準）を採用しました。各値に <code>source</code> を付記しています。
+        Tier0/Tier1 の暫定値は古典像との対比のために温存しています。現段階の数値は<strong>定性的・教育的</strong>にお読みください。
       </p>
 
       <h2 id="s11">11. 既知の限界と今後の拡張</h2>
       <ul>
         <li>接触弧補正なし（付着点近似）。→ 接点 <code>T</code> での力作用・経路長を後続で追加。</li>
-        <li>能動プーリー未導入（起始固定）。→ active pulley（Demer ら）を Phase で導入予定。</li>
+        <li>Tier2 の能動プーリーは half‑angle 則を運動学的に実装したもの（結合係数 k=0.5）。プーリーの前後移動そのものの動力学（Kono 2002 の tertiary 実測差）や斜筋プーリーの実測値差し替えは今後。</li>
         <li>力学（張力・length‑tension・平衡）は未実装。本画面は運動学的な作用軸のみ。</li>
         <li>両眼・臨床モジュール（麻痺／手術／Hess／Bielschowsky）は将来 Phase。</li>
       </ul>
-      <p class="small muted">ロードマップ：P2 平衡ソルバ → P3 active pulley → P4 両眼 → P5 臨床。</p>
+      <p class="small muted">ロードマップ：<s>P3 active pulley（本 Phase 完了）</s> → P2 平衡ソルバ → P4 両眼 → P5 臨床。</p>
 
       <h2 id="s12">12. 参考文献</h2>
       <ol class="refs">
@@ -260,22 +292,24 @@ a(q) = normalize(P × Q)</code></pre>
         <li>Haslwanter T. Mathematics of three‑dimensional eye rotations. <i>Vision Res.</i> 1995;35(12):1727–1739.（クォータニオン／回転ベクトル表現）</li>
         <li>Tweed D, Vilis T. Geometric relations of eye position and velocity vectors during saccades. <i>Vision Res.</i> 1990;30(1):111–127.（Listing 則・half‑angle 則）</li>
         <li>Demer JL. The orbital pulley system: a revolution in concepts of orbital anatomy. <i>Ann N Y Acad Sci.</i> 2002.（能動プーリー）</li>
+        <li>Kono R, Clark RA, Demer JL. Active pulleys: magnetic resonance imaging of rectus muscle paths in tertiary gazes. <i>Invest Ophthalmol Vis Sci.</i> 2002;43(7):2179–2188.（能動プーリーの tertiary 実測）</li>
+        <li>Clark RA, Demer JL. Effect of aging on human rectus extraocular muscle paths… / horizontal rectus surgery on pulley positions. <i>Invest Ophthalmol Vis Sci.</i> 2006.（手術でプーリーはほぼ動かない）</li>
       </ol>
       <p class="small muted">
         文献番号・巻号は標準的な書誌に基づく参考表示です。臨床・研究にあたっては必ず一次文献をご確認ください。
       </p>
 
       <h2 id="s13">13. 検証の再現方法</h2>
-      <p>ソースを取得し、次で §11 の受け入れテスト（44 件）を実行できます。</p>
+      <p>ソースを取得し、次で受け入れテスト（66 件）を実行できます。</p>
       <pre><code>npm install
-npm test        # §11 受け入れテスト（44 件）
+npm test        # 受け入れテスト（66 件, §11 + Tier2 + Listing）
 npm run dev     # ローカルでシミュレータを起動</code></pre>
       <p class="small">
         ソース：<a href="https://github.com/gankobo/eom-simulator">github.com/gankobo/eom-simulator</a>
       </p>
 
       <footer>
-        外眼筋作用シミュレータ（eom-simulator）／ 現状 Phase 1。
+        外眼筋作用シミュレータ（eom-simulator）／ 現状 Phase 3（Tier2 能動プーリー）。
         本ページの数式・符号規約は計算核 <code>src/core</code> の実装に対応します。
         © 2026 gankobo — MIT License.
       </footer>

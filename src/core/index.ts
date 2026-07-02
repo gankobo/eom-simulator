@@ -11,15 +11,24 @@ export * from "./model/types";
 export * from "./model/action";
 export { KinematicModel } from "./model/kinematic";
 export { StringModel } from "./model/string";
+export { PulleyModel, pulleyAt, pulleyBase } from "./model/pulley";
 
 import type { BiomechModel, Tier } from "./model/types";
 import { KinematicModel } from "./model/kinematic";
 import { StringModel } from "./model/string";
+import { PulleyModel } from "./model/pulley";
 
 /**
  * Tier 名から対応するモデルを生成。
  * eye は単眼 physics に影響しない（左右で作用は同一）。表示・両眼層が左眼を扱う。
  */
 export function createModel(tier: Tier): BiomechModel {
-  return tier === "kinematic" ? new KinematicModel() : new StringModel();
+  switch (tier) {
+    case "kinematic":
+      return new KinematicModel();
+    case "pulley":
+      return new PulleyModel();
+    default:
+      return new StringModel();
+  }
 }

@@ -16,7 +16,7 @@ export interface Action {
 }
 
 /** モデル忠実度の階層（UI で切替えて比較できる）。 */
-export type Tier = "kinematic" | "string";
+export type Tier = "kinematic" | "string" | "pulley";
 
 /** すべてのモデル実装が満たすインターフェース（§4）。 */
 export interface BiomechModel {

@@ -10,3 +10,6 @@ __pycache__/
 HANDOFF_eom_simulator.md
 tasks/
 *.bak
+
+# 一次文献PDF（著作権あり: 公開リポジトリにコミットしない。座標値は出典付きでコード内に取込済）
+references/

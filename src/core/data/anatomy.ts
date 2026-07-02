@@ -1,10 +1,10 @@
 /**
  * 解剖パラメータ（右眼正準系 +X前方/+Y鼻側/+Z上方, 単位 mm）。
  *
- * 重要: ここの P0/Q は §11 受け入れ基準（第一眼位の作用分解, 回旋0交差 直筋外転23°・
- * 斜筋内転51°, 純粋上下転）を満たすよう構成した「暫定スターター」。
- * Phase 3 以降で Clark 2000 (IOVS 41:3787-97) Table 2 等の一次文献の実測値へ差し替える。
- * 各値の出自は source に記す。検証スクリプト: tasks/verify_final.py（§11 すべて緑）。
+ * 重要: insertion/origin は §11 受け入れ基準（第一眼位の作用分解, 回旋0交差 直筋外転23°・
+ * 斜筋内転51°, 純粋上下転）を満たすよう構成した暫定スターター（Tier0/Tier1 が使用）。
+ * pulley は直筋のみ Clark 2000 (IOVS 41:3787-97) Table 2 の実測値（Tier2 の可視化・機序説明用）。
+ * 各値の出自は source に記す。検証: tasks/verify_final.py（§11）, tasks/verify_tier2.py（Tier2）。
  */
 import type { Vec3 } from "../kinematics/vec3";
 
@@ -28,6 +28,12 @@ export interface MuscleAnatomy {
   origin: Vec3;
   /** Tier0 用の眼窩固定回旋軸（単位ベクトル, §14.2）。比較ベースライン。 */
   fixedAxis: Vec3;
+  /**
+   * 結合組織プーリーの位置（球中心基準, mm）。直筋のみ Clark 2000 (IOVS 41:3787-97)
+   * Table 2 の実測値。斜筋（滑車/眼窩底）は Clark 非対象のため未設定（origin を流用）。
+   * Tier2 の 3D 可視化と half-angle 機序の説明に用いる（作用軸計算は half-angle 則で行う）。
+   */
+  pulley?: Vec3;
   source: string;
 }
 
@@ -36,6 +42,13 @@ export const GLOBE_RADIUS = 12.0;
 
 /** 偏位角(度) → プリズムジオプター換算係数（§5.3）。 */
 export const DEG_TO_PRISM = 1.75;
+
+/**
+ * half-angle 則の結合係数（Tier2 能動プーリー）。
+ * 筋の作用軸は眼回転の半分（k=0.5）だけ回る＝Listing 則・眼球運動の可換性を生む
+ * 能動プーリー系の運動学的帰結（Clark 2000 / Kono 2002）。
+ */
+export const HALF_ANGLE_K = 0.5;
 
 /**
  * 右眼の解剖（tasks/verify_final.py で §11 を満たすことを確認済み）。
@@ -47,25 +60,37 @@ export const RIGHT_EYE_ANATOMY: Record<MuscleId, MuscleAnatomy> = {
     insertion: [6.88, 9.83, 0.0],
     origin: [-26.82, 8.05, 0.0],
     fixedAxis: [0, 0, 1],
-    source: "§7.2 輪部5.5mm + §14.2 純内転軸; verify_final.py で §11 確認",
+    pulley: [-3.0, 14.0, -0.3],
+    source:
+      "§7.2 輪部5.5mm + §14.2 純内転軸; verify_final.py で §11 確認。" +
+      "pulley: Clark 2000 IOVS 41:3787-97 Table 2 (3後方/14.0鼻側/0.3下方)",
   },
   LR: {
     insertion: [5.63, -10.6, 0.0],
     origin: [-27.46, 5.49, 0.0],
     fixedAxis: [0, 0, -1],
-    source: "§7.2 輪部6.9mm + §14.2 純外転軸; verify_final.py で §11 確認",
+    pulley: [-9.0, -10.1, -0.3],
+    source:
+      "§7.2 輪部6.9mm + §14.2 純外転軸; verify_final.py で §11 確認。" +
+      "pulley: Clark 2000 Table 2 (9後方/10.1耳側/0.3下方)",
   },
   SR: {
     insertion: [4.95, 0.16, 10.93],
     origin: [-25.58, 11.24, 1.84],
     fixedAxis: [-0.384, -0.904, 0.187],
-    source: "§7.2 輪部7.7mm + §7.3 筋平面23° + §14.2; 外転23°で回旋0",
+    pulley: [-7.0, 1.7, 11.8],
+    source:
+      "§7.2 輪部7.7mm + §7.3 筋平面23° + §14.2; 外転23°で回旋0。" +
+      "pulley: Clark 2000 Table 2 (7後方/1.7鼻側/11.8上方)",
   },
   IR: {
     insertion: [5.86, -0.33, -10.46],
     origin: [-25.58, 11.24, -1.84],
     fixedAxis: [0.384, 0.904, 0.187],
-    source: "§7.2 輪部6.5mm + §7.3 筋平面23° + §14.2; 外転23°で回旋0",
+    pulley: [-6.0, 4.3, -12.9],
+    source:
+      "§7.2 輪部6.5mm + §7.3 筋平面23° + §14.2; 外転23°で回旋0。" +
+      "pulley: Clark 2000 Table 2 (6後方/4.3鼻側/12.9下方)",
   },
   SO: {
     insertion: [-8.08, -5.18, 7.2],

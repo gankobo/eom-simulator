@@ -6,6 +6,8 @@ import {
   gazeQuat,
   canonicalAnatomy,
   apply as qapply,
+  pulleyAt,
+  pulleyBase,
   GLOBE_RADIUS as R,
   MUSCLE_IDS,
   MUSCLE_NAMES_JA,
@@ -13,6 +15,25 @@ import {
   type Tier,
 } from "../core";
 import type { Quat } from "../core";
+
+/** モデルの機能的起始（弦の起点）。Tier2 は眼位依存プーリー。 */
+function funcOrigin(tier: Tier, m: MuscleId, q: Quat): number[] {
+  return tier === "pulley" ? [...pulleyAt(m, q)] : [...canonicalAnatomy(m).origin];
+}
+
+const TIER_DESC: Record<Tier, string> = {
+  kinematic: "Tier0: 回旋軸を眼窩に固定した簡易近似。眼位で作用は変わらない（比較用ベースライン）。",
+  string:
+    "Tier1: 付着部が眼位で動く string model。第三作用の眼位依存が出る。古典23°/51°で純粋上下転。",
+  pulley:
+    "Tier2: 能動プーリー（Clark 2000/Kono 2002）。作用軸が眼回転の半分だけ回る（half-angle 則）＝可換性・Listing 則の基盤。",
+};
+
+const LABEL: Record<Tier, string> = {
+  kinematic: "Tier0",
+  string: "Tier1",
+  pulley: "Tier2",
+};
 
 const COLOR: Record<MuscleId, number> = {
   MR: 0xe8453c, // 内直筋 赤
@@ -26,7 +47,8 @@ const COLOR: Record<MuscleId, number> = {
 // ---- 状態 ----
 const state = {
   eye: "OD" as "OD" | "OS",
-  tier: "string" as Tier,
+  tier: "pulley" as Tier,
+  compare: false,
   h: 0,
   v: 0,
   visible: new Set<MuscleId>(MUSCLE_IDS),
@@ -116,10 +138,42 @@ function makeDot(p: number[], color: number, r = 0.6): THREE.Mesh {
   return m;
 }
 
+type LineStyle = "solid" | "dashed" | "dotted";
+/** 線種つきの線分。Tier の区別に使う（点線=Tier0 / 破線=Tier1 / 実線=Tier2）。 */
+function makeStyledLine(a: number[], b: number[], color: number, style: LineStyle): THREE.Line {
+  const g = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(a[0], a[1], a[2]),
+    new THREE.Vector3(b[0], b[1], b[2]),
+  ]);
+  if (style === "solid") {
+    return new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+  }
+  const dashSize = style === "dotted" ? 0.5 : 1.6;
+  const gapSize = style === "dotted" ? 0.7 : 1.1;
+  const line = new THREE.Line(g, new THREE.LineDashedMaterial({ color, dashSize, gapSize }));
+  line.computeLineDistances();
+  return line;
+}
+const TIER_STYLE: Record<Tier, LineStyle> = {
+  kinematic: "dotted",
+  string: "dashed",
+  pulley: "solid",
+};
+/** 作用軸を中心を通す線分にする（±R*1.4）。 */
+function axisSegment(axis: readonly number[]): [number[], number[]] {
+  const s = R * 1.4;
+  return [
+    [-axis[0] * s, -axis[1] * s, -axis[2] * s],
+    [axis[0] * s, axis[1] * s, axis[2] * s],
+  ];
+}
+
 // ---- 更新 ----
 function toThreeQuat(q: Quat): THREE.Quaternion {
   return new THREE.Quaternion(q[0], q[1], q[2], q[3]);
 }
+
+const TIERS: Tier[] = ["kinematic", "string", "pulley"];
 
 function update() {
   const model = createModel(state.tier);
@@ -129,30 +183,47 @@ function update() {
   // 左眼(OS)は表示のみ Y 鏡映（physics は右眼正準のまま）。
   eyeRoot.scale.set(1, state.eye === "OS" ? -1 : 1, 1);
 
+  document.getElementById("tier-desc")!.textContent = TIER_DESC[state.tier];
+
   // 筋の再描画（古いオブジェクトの GPU リソースを解放してから作り直す）
   disposeChildren(muscleGroup);
   for (const m of MUSCLE_IDS) {
     if (!state.visible.has(m)) continue;
     const c = COLOR[m];
-    const a = canonicalAnatomy(m);
-    const P = qapply(q, a.insertion); // 付着部（眼位で移動）
-    const Q = a.origin; // 機能的起始（固定）
-    // 筋の「弦」: 起始→付着部
-    muscleGroup.add(makeLine([...Q], [...P], c));
+    const P = qapply(q, canonicalAnatomy(m).insertion); // 付着部（眼位で移動）
+    const Q = funcOrigin(state.tier, m, q); // 機能的起始（Tier2 は眼位依存プーリー）
+
+    // 筋の「弦」: 機能的起始→付着部
+    muscleGroup.add(makeLine(Q, [...P], c));
     muscleGroup.add(makeDot([...P], c));
-    muscleGroup.add(makeDot([...Q], c, 0.5));
-    // 回旋軸（中心を通す）
-    const axis = model.rotationAxis(m, q);
-    muscleGroup.add(
-      makeLine(
-        [axis[0] * -R * 1.4, axis[1] * -R * 1.4, axis[2] * -R * 1.4],
-        [axis[0] * R * 1.4, axis[1] * R * 1.4, axis[2] * R * 1.4],
-        c,
-      ),
-    );
+    muscleGroup.add(makeDot(Q, c, 0.5));
+
+    // Tier2: プーリーが第一眼位から動く様子（基準=ゴースト＋移動線）
+    if (state.tier === "pulley" && canonicalAnatomy(m).pulley) {
+      const base = [...pulleyBase(m)];
+      muscleGroup.add(makeDot(base, c, 0.35));
+      muscleGroup.add(makeStyledLine(base, Q, c, "dotted"));
+    }
+
+    if (state.compare) {
+      // 3モデルの作用軸を線種で重ね描き（点線Tier0/破線Tier1/実線Tier2）。
+      for (const t of TIERS) {
+        const axis = createModel(t).rotationAxis(m, q);
+        const [pa, pb] = axisSegment(axis);
+        muscleGroup.add(makeStyledLine(pa, pb, c, TIER_STYLE[t]));
+      }
+    } else {
+      // 単一モデルの作用軸（実線）。
+      const [pa, pb] = axisSegment(model.rotationAxis(m, q));
+      muscleGroup.add(makeStyledLine(pa, pb, c, "solid"));
+    }
   }
 
-  // 作用表
+  updateActionTable(model, q);
+  updateCompareTable(q);
+}
+
+function updateActionTable(model: ReturnType<typeof createModel>, q: Quat) {
   const tbody = document.querySelector("#action-table tbody")!;
   tbody.innerHTML = "";
   for (const m of MUSCLE_IDS) {
@@ -167,6 +238,33 @@ function update() {
       `<td>${fmt(act.hor, "内転", "外転")}</td>` +
       `<td>${len.toFixed(1)}</td>`;
     tbody.appendChild(tr);
+  }
+}
+
+/** 3モデル比較表（表示中の筋のみ、筋×Tier で作用3成分を並置）。 */
+function updateCompareTable(q: Quat) {
+  const section = document.getElementById("compare-section")!;
+  section.style.display = state.compare ? "" : "none";
+  if (!state.compare) return;
+  const tbody = document.querySelector("#compare-table tbody")!;
+  tbody.innerHTML = "";
+  const shown = MUSCLE_IDS.filter((m) => state.visible.has(m));
+  for (const m of shown) {
+    TIERS.forEach((t, i) => {
+      const act = muscleAction(createModel(t), m, q);
+      const tr = document.createElement("tr");
+      const name =
+        i === 0
+          ? `<td class="muscle" rowspan="3" style="color:#${COLOR[m].toString(16)}">${m} ${MUSCLE_NAMES_JA[m]}</td>`
+          : "";
+      tr.innerHTML =
+        name +
+        `<td>${LABEL[t]}</td>` +
+        `<td>${fmt(act.tor, "外旋", "内旋")}</td>` +
+        `<td>${fmt(act.ver, "下転", "上転")}</td>` +
+        `<td>${fmt(act.hor, "内転", "外転")}</td>`;
+      tbody.appendChild(tr);
+    });
   }
 }
 
@@ -196,8 +294,14 @@ vEl.addEventListener("input", () => {
   state.eye = (e.target as HTMLSelectElement).value as "OD" | "OS";
   update();
 });
-(document.getElementById("tier") as HTMLSelectElement).addEventListener("change", (e) => {
+const tierEl = document.getElementById("tier") as HTMLSelectElement;
+tierEl.value = state.tier;
+tierEl.addEventListener("change", (e) => {
   state.tier = (e.target as HTMLSelectElement).value as Tier;
+  update();
+});
+(document.getElementById("compare") as HTMLInputElement).addEventListener("change", (e) => {
+  state.compare = (e.target as HTMLInputElement).checked;
   update();
 });
 document.querySelectorAll<HTMLButtonElement>("[data-gaze]").forEach((b) => {

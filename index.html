@@ -11,7 +11,7 @@
       <div id="canvas-wrap"></div>
       <aside id="panel">
         <h1>外眼筋作用シミュレータ</h1>
-        <p class="sub">眼位依存の6筋作用（Tier0 kinematic / Tier1 string model）</p>
+        <p class="sub">眼位依存の6筋作用（Tier0 kinematic / Tier1 string / Tier2 能動プーリー）</p>
         <p><a href="./listing.html">Listing 則 と half-angle 則の3D解説 →</a></p>
         <p><a href="./guide.html">📖 数値の読み方・数理モデル（眼科医向け解説）→</a></p>
 
@@ -24,10 +24,15 @@
             </select>
             <label>モデル</label>
             <select id="tier">
+              <option value="pulley">Tier2 能動プーリー（最精密）</option>
               <option value="string">Tier1 string（精密）</option>
               <option value="kinematic">Tier0 kinematic（簡易）</option>
             </select>
           </div>
+          <div class="row">
+            <label><input type="checkbox" id="compare" /> 3モデル比較（軸を重ねて表示）</label>
+          </div>
+          <p class="note" id="tier-desc"></p>
         </section>
 
         <section>
@@ -60,6 +65,21 @@
             <tbody></tbody>
           </table>
           <p class="note">回旋: +外旋/−内旋　上下: +下転/−上転　水平: +内転/−外転</p>
+        </section>
+
+        <section id="compare-section" style="display: none">
+          <h2>3モデル比較（表示中の筋）</h2>
+          <p class="note">
+            3D では作用軸を線種で重ね描き:
+            <b>点線</b>=Tier0（眼窩固定）／<b>破線</b>=Tier1（string）／<b>実線</b>=Tier2（能動プーリー）。
+            第一眼位では3本が一致し、眼を動かすほど分かれます（Tier2 は half-angle で半分だけ傾く）。
+          </p>
+          <table id="compare-table">
+            <thead>
+              <tr><th>筋</th><th>モデル</th><th>回旋</th><th>上下転</th><th>水平</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </section>
       </aside>
     </div>

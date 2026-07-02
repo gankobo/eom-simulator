@@ -44,6 +44,29 @@ export function apply(q: Quat, v: Vec3): Vec3 {
 
 export const conjugate = (q: Quat): Quat => [-q[0], -q[1], -q[2], q[3]];
 
+/**
+ * IDENTITY から q への球面線形補間（slerp）を割合 t で。
+ * slerp(IDENTITY, q, 0.5) は「q の半分の回転」= half-angle 則の実装に使う。
+ */
+export function slerpFromIdentity(q: Quat, t: number): Quat {
+  let [x, y, z, w] = q;
+  if (w < 0) {
+    x = -x;
+    y = -y;
+    z = -z;
+    w = -w;
+  } // 最短経路
+  if (w > 0.9995) {
+    // ほぼ無回転: 線形近似して正規化
+    return normalize([x * t, y * t, z * t, 1 + (w - 1) * t]);
+  }
+  const th = Math.acos(w); // IDENTITY と q のなす半角
+  const s = Math.sin(th);
+  const a = Math.sin((1 - t) * th) / s;
+  const b = Math.sin(t * th) / s;
+  return [x * b, y * b, z * b, a + w * b];
+}
+
 export function normalize(q: Quat): Quat {
   const n = Math.hypot(q[0], q[1], q[2], q[3]);
   return n > 0 ? [q[0] / n, q[1] / n, q[2] / n, q[3] / n] : IDENTITY;
