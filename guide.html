@@ -227,7 +227,7 @@ R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
       <div class="callout">
         <b>学術的な但し書き（誠実な限界）</b>
         <ul>
-          <li><b>係数 k = 0.5 は理想値です</b>。half‑angle 則は「固視眼位が Listing 面に乗る」ための幾何学的必然として位置領域では厳密に 0.5 ですが、実測の傾き係数は方向・個体・運動種で幅があります。衝動性運動（サッカード）では水平で約 0.5、垂直で約 0.35 程度、前庭動眼反射（VOR）ではさらに小さく<strong>約 0.25（quarter‑angle）</strong>です（Tweed &amp; Vilis 1990；Thurtell 2011；Misslisch/Tweed/Hess 1994）。本モデルは視覚誘導運動を代表する 0.5 を採用しています。</li>
+          <li><b>係数 k = 0.5 は理想値です</b>。half‑angle 則は「固視眼位が Listing 面に乗る」ための幾何学的必然として位置領域では厳密に 0.5 ですが、実測の傾き係数は方向・個体・運動種で幅があります。衝動性運動（サッカード）では水平で約 0.5、垂直で約 0.35 程度、前庭動眼反射（VOR）ではさらに小さく<strong>約 0.25（quarter‑angle）</strong>です（Tweed &amp; Vilis 1990；Thurtell 2011；Misslisch ほか 1994）。本モデルは視覚誘導運動を代表する 0.5 を採用しています。</li>
           <li><b>「能動」かどうかは今も論争があります</b>。プーリーが機能的起始として存在し、half‑angle と Listing 則を力学的に生むこと自体は広く合意されています（近年は Wei, Mutawak &amp; Demer 2022 の力学シミュレーションが「直筋の走行は眼球回転角の約半分だけ屈曲し、これが Listing 則の実装に必要十分」と裏づけ）。一方、プーリーが眼窩層の収縮で<strong>能動的に</strong>移動するという能動プーリー説の「強い形」には批判もあります（Miller 2019 と Demer/Clark 2020 の応酬）。<strong>本 Tier2 が依拠するのは、論争の少ない受動的なプーリー幾何（half‑angle）だけ</strong>で、能動的移動の動力学そのものは仮定していません。</li>
         </ul>
       </div>
@@ -296,19 +296,20 @@ R^(1/2)(q) = slerp(I, q, 0.5)  // 眼位 q の「半分」の回転</code></pre>
 
       <h2 id="s12">12. 参考文献</h2>
       <ol class="refs">
-        <li>Robinson DA. A quantitative analysis of extraocular muscle cooperation and squint. <i>Invest Ophthalmol.</i> 1975.（Tier1 string model／SQUINT の基礎）</li>
+        <li>Robinson DA. A quantitative analysis of extraocular muscle cooperation and squint. <i>Invest Ophthalmol.</i> 1975;14(11):801–825.（Tier1 string model／SQUINT の基礎）</li>
         <li>Clark RA, Miller JM, Demer JL. Three‑dimensional location of human rectus pulleys by path inflections in secondary gaze positions. <i>Invest Ophthalmol Vis Sci.</i> 2000;41(12):3787–3797.（解剖パラメータの差し替え先）</li>
         <li>Haslwanter T. Mathematics of three‑dimensional eye rotations. <i>Vision Res.</i> 1995;35(12):1727–1739.（クォータニオン／回転ベクトル表現）</li>
         <li>Tweed D, Vilis T. Geometric relations of eye position and velocity vectors during saccades. <i>Vision Res.</i> 1990;30(1):111–127.（Listing 則・half‑angle 則）</li>
-        <li>Demer JL. The orbital pulley system: a revolution in concepts of orbital anatomy. <i>Ann N Y Acad Sci.</i> 2002.（能動プーリー）</li>
+        <li>Demer JL. The orbital pulley system: a revolution in concepts of orbital anatomy. <i>Ann N Y Acad Sci.</i> 2002;956:17–32.（能動プーリー）</li>
         <li>Kono R, Clark RA, Demer JL. Active pulleys: magnetic resonance imaging of rectus muscle paths in tertiary gazes. <i>Invest Ophthalmol Vis Sci.</i> 2002;43(7):2179–2188.（能動プーリーの tertiary 実測）</li>
-        <li>Clark RA, Demer JL. Effect of aging on human rectus extraocular muscle paths… / horizontal rectus surgery on pulley positions. <i>Invest Ophthalmol Vis Sci.</i> 2006.（手術でプーリーはほぼ動かない）</li>
+        <li>Clark RA, Demer JL. Effect of aging on human rectus extraocular muscle paths demonstrated by magnetic resonance imaging. <i>Am J Ophthalmol.</i> 2002;134(6):872–878.（加齢による筋走行の変化）</li>
+        <li>Clark RA, Demer JL. Magnetic resonance imaging of the effects of horizontal rectus extraocular muscle surgery on pulley and globe positions and stability. <i>Invest Ophthalmol Vis Sci.</i> 2006;47(1):188–194.（手術でプーリーはほぼ動かない）</li>
         <li>Demer JL. Current concepts of mechanical and neural factors in ocular motility. <i>Curr Opin Neurol.</i> 2006;19(1):4–13.（能動プーリー説の総説・half‑angle の力学的根拠）</li>
         <li>Demer JL, et al. Evidence for a pulley of the inferior oblique muscle. <i>Invest Ophthalmol Vis Sci.</i> 2003;44(9):3856–3865.（下斜筋の機能的プーリー・半角挙動）</li>
-        <li>Wei WL, Mutawak B, Demer JL. Biomechanical modeling of actively controlled rectus extraocular muscle pulleys. <i>Sci Rep.</i> 2022;12:5806.（力学モデルで half‑angle が創発することを裏づけ）</li>
-        <li>Thurtell MJ, et al. Three‑dimensional kinematics of saccadic eye movements: is the half‑angle rule obeyed? <i>Ann N Y Acad Sci.</i> 2011.（係数は方向依存：水平≈0.5／垂直≈0.35）</li>
+        <li>Wei Q, Mutawak B, Demer JL. Biomechanical modeling of actively controlled rectus extraocular muscle pulleys. <i>Sci Rep.</i> 2022;12(1):5806.（力学モデルで half‑angle が創発することを裏づけ）</li>
+        <li>Thurtell MJ, et al. Three‑dimensional kinematics of saccadic eye movements in humans: is the half‑angle rule obeyed? <i>Ann N Y Acad Sci.</i> 2011;1233:34–40.（係数は方向依存：水平≈0.5／垂直≈0.35）</li>
         <li>van Rijn LJ, van den Berg AV. Binocular eye orientation during fixations: Listing's law extended to include eye vergence. <i>Vision Res.</i> 1993;33(5–6):691–708.（輻輳時の quarter‑angle）</li>
-        <li>Misslisch H, Tweed D, Hess BJM. Rotational kinematics of the human vestibulo‑ocular reflex III: Listing's law. <i>J Neurophysiol.</i> 1994;72(5):2490–2502.（VOR は quarter‑angle）</li>
+        <li>Misslisch H, Tweed D, Fetter M, Sievering D, Koenig E. Rotational kinematics of the human vestibulo‑ocular reflex III: Listing's law. <i>J Neurophysiol.</i> 1994;72(5):2490–2502.（VOR は quarter‑angle）</li>
         <li>Miller JM. EOM pulleys and sequelae: a critical review. <i>Invest Ophthalmol Vis Sci.</i> 2019;60(15):5052–5058.（能動プーリー説への批判／Demer &amp; Clark 2020 の反論を含む）</li>
         <li>Chaudhuri Z, Demer JL. Sagging eye syndrome: connective tissue involution as a cause of horizontal and vertical strabismus in older patients. <i>JAMA Ophthalmol.</i> 2013;131(5):619–625.（加齢によるプーリー下垂）</li>
       </ol>

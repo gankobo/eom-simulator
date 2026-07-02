@@ -8,12 +8,12 @@
 import { describe, it, expect } from "vitest";
 import { gazeQuat } from "../kinematics/fick";
 import { eccentricity } from "../kinematics/listing";
-import { dot } from "../kinematics/vec3";
+import { dot, distance } from "../kinematics/vec3";
 import type { Vec3 } from "../kinematics/vec3";
 import { muscleAction } from "../model/action";
-import { PulleyModel } from "../model/pulley";
+import { PulleyModel, pulleyBase, pulleyAt } from "../model/pulley";
 import { StringModel } from "../model/string";
-import type { MuscleId } from "../data/anatomy";
+import { RIGHT_EYE_ANATOMY, type MuscleId } from "../data/anatomy";
 
 const pulley = new PulleyModel();
 const string = new StringModel();
@@ -87,6 +87,50 @@ describe("Tier2 tertiary 可換性（斜め眼位で half-angle を保つ）", (
       expect(Math.abs(t2 - half)).toBeLessThan(Math.abs(t1 - half));
     });
   }
+});
+
+describe("Tier2 プーリー座標（Clark 2000 Table 2 → 正準系）", () => {
+  // 論文表の実測値を正準系 [前後, −耳側, 上方] に変換した独立の期待値。
+  // 座標変換の符号ミスや MR 鼻側 14.2mm の変更を検出する（作用軸テストは素通りするため）。
+  const clarkCanonical: Record<"MR" | "LR" | "SR" | "IR", Vec3> = {
+    MR: [-3.0, 14.2, -0.3],
+    LR: [-9.0, -10.1, -0.3],
+    SR: [-7.0, 1.7, 11.8],
+    IR: [-6.0, 4.3, -12.9],
+  };
+  for (const m of Object.keys(clarkCanonical) as (keyof typeof clarkCanonical)[]) {
+    it(`${m}: pulleyBase が Clark 実測値に一致`, () => {
+      expect(pulleyBase(m)).toEqual(clarkCanonical[m]);
+    });
+  }
+  it("斜筋(SO/IO)はプーリー未設定＝機能的起始(origin)を流用", () => {
+    for (const m of ["SO", "IO"] as MuscleId[]) {
+      expect(pulleyBase(m)).toEqual([...RIGHT_EYE_ANATOMY[m].origin]);
+    }
+  });
+  it("第一眼位ではプーリーは基準位置から動かない（pulleyAt≈pulleyBase）", () => {
+    for (const m of ["MR", "LR", "SR", "IR"] as MuscleId[]) {
+      expect(distance(pulleyAt(m, PRIMARY), pulleyBase(m))).toBeLessThan(1e-9);
+    }
+  });
+});
+
+describe("Tier2 筋長は折れ線経路（付着部→プーリー→起始）の総和", () => {
+  it("直筋: 全長 = 付着部→プーリー + プーリー→apex（前方区間だけの切り捨てをしない）", () => {
+    for (const m of ["MR", "LR", "SR", "IR"] as MuscleId[]) {
+      const a = RIGHT_EYE_ANATOMY[m];
+      const expected = distance(a.insertion, a.pulley!) + distance(a.pulley!, a.origin);
+      expect(pulley.muscleLength(m, PRIMARY)).toBeCloseTo(expected, 6);
+      // 折れ線はプーリーで曲がるため、直線(Tier1)より長い。
+      expect(pulley.muscleLength(m, PRIMARY)).toBeGreaterThan(string.muscleLength(m, PRIMARY));
+    }
+  });
+  it("斜筋: プーリー無しなので単区間（付着部→起始）", () => {
+    for (const m of ["SO", "IO"] as MuscleId[]) {
+      const a = RIGHT_EYE_ANATOMY[m];
+      expect(pulley.muscleLength(m, PRIMARY)).toBeCloseTo(distance(a.insertion, a.origin), 6);
+    }
+  });
 });
 
 describe("Tier2 第一眼位は Tier1(string) と一致（同じ幾何が起点）", () => {

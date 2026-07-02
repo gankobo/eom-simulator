@@ -40,7 +40,14 @@ export class PulleyModel implements BiomechModel {
   muscleLength(muscle: MuscleId, eyeOrientation: Quat): number {
     const a = canonicalAnatomy(muscle);
     const P = qapply(eyeOrientation, a.insertion);
-    return length(sub(P, pulleyAt(muscle, eyeOrientation)));
+    const pulley = pulleyAt(muscle, eyeOrientation);
+    // 経路長は「付着部 → プーリー → 眼窩起始(固定 apex)」の折れ線の総和。
+    // 直筋は前方(付着部→プーリー)＋後方(プーリー→apex)の2区間。半角でプーリーが
+    // 動くと前方区間が変わる。斜筋は a.pulley 未設定＝pulleyAt が機能的起始そのもの
+    // なので後方区間は無く、Tier1 と同じ単区間（起点が半角で移動するだけ）。
+    const anterior = length(sub(P, pulley));
+    const posterior = a.pulley ? length(sub(pulley, a.origin)) : 0;
+    return anterior + posterior;
   }
 }
 

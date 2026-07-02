@@ -23,18 +23,18 @@ export const MUSCLE_NAMES_JA: Record<MuscleId, string> = {
 
 export interface MuscleAnatomy {
   /** 第一眼位の付着部（強膜上, 球中心基準, mm）。眼の回転とともに動く。 */
-  insertion: Vec3;
+  readonly insertion: Vec3;
   /** 機能的起始（Tier1 では眼窩固定。直筋=apex/pulley, 斜筋=滑車/眼窩底, mm）。 */
-  origin: Vec3;
+  readonly origin: Vec3;
   /** Tier0 用の眼窩固定回旋軸（単位ベクトル, §14.2）。比較ベースライン。 */
-  fixedAxis: Vec3;
+  readonly fixedAxis: Vec3;
   /**
    * 結合組織プーリーの位置（球中心基準, mm）。直筋のみ Clark 2000 (IOVS 41:3787-97)
    * Table 2 の実測値。斜筋（滑車/眼窩底）は Clark 非対象のため未設定（origin を流用）。
    * Tier2 の 3D 可視化と half-angle 機序の説明に用いる（作用軸計算は half-angle 則で行う）。
    */
-  pulley?: Vec3;
-  source: string;
+  readonly pulley?: Vec3;
+  readonly source: string;
 }
 
 /** 眼球半径（mm）。軸長 ~24mm。 */
@@ -55,7 +55,7 @@ export const HALF_ANGLE_K = 0.5;
  * insertion/origin は付着部距離(§7.2)・筋平面角(§7.3 直筋23°/斜筋51°)・
  * 滑車/起始の象限から構成し、§11 の作用と0交差に一致するよう同定した。
  */
-export const RIGHT_EYE_ANATOMY: Record<MuscleId, MuscleAnatomy> = {
+export const RIGHT_EYE_ANATOMY: Readonly<Record<MuscleId, MuscleAnatomy>> = {
   MR: {
     insertion: [6.88, 9.83, 0.0],
     origin: [-26.82, 8.05, 0.0],

@@ -49,7 +49,8 @@ export const conjugate = (q: Quat): Quat => [-q[0], -q[1], -q[2], q[3]];
  * slerp(IDENTITY, q, 0.5) は「q の半分の回転」= half-angle 則の実装に使う。
  */
 export function slerpFromIdentity(q: Quat, t: number): Quat {
-  let [x, y, z, w] = q;
+  // 入力の正規化ズレ・非有限を吸収（NaN/長さ0 は IDENTITY に落として伝播を止める）。
+  let [x, y, z, w] = normalize(q);
   if (w < 0) {
     x = -x;
     y = -y;
